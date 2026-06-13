@@ -37,6 +37,11 @@ function logout() {
         <span class="sidebar__group">Tools</span>
         <RouterLink to="/tools/merge-pdf">📄 Merge PDF</RouterLink>
         <RouterLink to="/tools/scan-pdf">🖼️ Scan to PDF</RouterLink>
+
+        <template v-if="auth.isAdmin">
+          <span class="sidebar__group">Admin</span>
+          <RouterLink to="/admin/users">👥 Users</RouterLink>
+        </template>
       </nav>
 
       <div class="sidebar__foot">

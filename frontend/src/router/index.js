@@ -28,6 +28,12 @@ const routes = [
     name: 'scan-pdf',
     component: () => import('@/views/ScanPdfView.vue'),
   },
+  {
+    path: '/admin/users',
+    name: 'admin-users',
+    component: () => import('@/views/UsersView.vue'),
+    meta: { admin: true },
+  },
 ];
 
 const router = createRouter({
@@ -36,12 +42,18 @@ const router = createRouter({
 });
 
 // The whole app requires login; only routes with meta.public are open.
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const auth = useAuthStore();
+  // Make sure the current user is loaded before role-based checks (e.g. refresh).
+  if (auth.token && !auth.user) await auth.fetchMe();
+
   if (!to.meta.public && !auth.isAuthenticated) {
     return { name: 'login', query: { redirect: to.fullPath } };
   }
   if (to.name === 'login' && auth.isAuthenticated) {
+    return { path: '/' };
+  }
+  if (to.meta.admin && !auth.isAdmin) {
     return { path: '/' };
   }
   return true;
