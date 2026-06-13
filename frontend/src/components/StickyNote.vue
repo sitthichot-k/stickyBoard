@@ -123,7 +123,7 @@ function onAnchorUp(e) {
       width: `${note.width}px`,
       height: `${note.height}px`,
       background: note.color,
-      pointerEvents: tool === 'pan' || tool === 'draw' ? 'none' : 'auto',
+      pointerEvents: tool === 'pan' || tool === 'draw' || tool === 'eraser' ? 'none' : 'auto',
     }"
     @pointerdown="emit('focus')"
   >

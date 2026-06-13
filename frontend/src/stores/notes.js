@@ -249,6 +249,16 @@ export const useNotesStore = defineStore('notes', {
     },
 
     async addStroke({ tool, color, width, points }) {
+      // Optimistic: show the stroke immediately so it doesn't flash out on release.
+      const temp = {
+        id: `tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        sheetId: this.sheetId,
+        tool,
+        color,
+        width,
+        points,
+      };
+      this.strokes.push(temp);
       try {
         const stroke = await strokeApi.createStroke({
           sheetId: this.sheetId,
@@ -257,13 +267,16 @@ export const useNotesStore = defineStore('notes', {
           width,
           points,
         });
-        this.strokes.push(stroke);
+        const i = this.strokes.findIndex((s) => s.id === temp.id);
+        if (i !== -1) this.strokes[i] = stroke;
+        else this.strokes.push(stroke);
         this.record({
           undo: () => this._deleteStroke(stroke.id),
           redo: () => this._restoreStroke(stroke.id),
         });
       } catch (err) {
         this.error = err.message;
+        this.strokes = this.strokes.filter((s) => s.id !== temp.id); // roll back
       }
     },
 

@@ -86,6 +86,7 @@ const tools = [
   { id: 'pan', icon: '✋', label: 'Pan the board' },
   { id: 'connect', icon: '🔗', label: 'Connect notes' },
   { id: 'draw', icon: '✏️', label: 'Draw' },
+  { id: 'eraser', icon: '🧽', label: 'Eraser' },
 ];
 
 /* ---- Drawing (draw tool) ---- */
@@ -102,7 +103,22 @@ const drawTools = [
 const drawColors = ['#1f2937', '#dc2626', '#2563eb', '#16a34a', '#d97706'];
 const drawTool = ref('pen');
 const drawColor = ref('#1f2937');
+const drawWidth = ref(STROKE_STYLES.pen.width); // adjustable thickness
 const drawing = ref(null); // current stroke: { points: [x,y,...] } in frame coords
+
+// Picking a pencil/pen/brush resets thickness to that style's default.
+function selectDrawTool(id) {
+  drawTool.value = id;
+  drawWidth.value = STROKE_STYLES[id].width;
+}
+
+// Eraser sizes (radius in frame px) — small / medium / large.
+const eraserSizes = [
+  { id: 's', label: 'Small', r: 10 },
+  { id: 'm', label: 'Medium', r: 20 },
+  { id: 'l', label: 'Large', r: 34 },
+];
+const eraserSize = ref(20);
 
 function strokeOpacity(t) {
   return STROKE_STYLES[t]?.opacity ?? 1;
@@ -130,10 +146,39 @@ function finishStroke(e) {
     store.addStroke({
       tool: drawTool.value,
       color: drawColor.value,
-      width: STROKE_STYLES[drawTool.value].width,
+      width: drawWidth.value,
       points,
     });
   }
+}
+
+/* ---- Eraser (eraser tool): drag over strokes to remove them ---- */
+let erasing = false;
+
+function strokeHit(stroke, p, r) {
+  const pts = stroke.points;
+  const reach = (r + (stroke.width || 1) / 2) ** 2;
+  for (let i = 0; i < pts.length; i += 2) {
+    const dx = pts[i] - p.x;
+    const dy = pts[i + 1] - p.y;
+    if (dx * dx + dy * dy <= reach) return true;
+  }
+  return false;
+}
+function eraseAt(e) {
+  const p = toFrame(e.clientX, e.clientY);
+  for (const s of [...strokes.value]) {
+    if (strokeHit(s, p, eraserSize.value)) store.removeStroke(s.id);
+  }
+}
+function startErase(e) {
+  erasing = true;
+  boardEl.value.setPointerCapture(e.pointerId);
+  eraseAt(e);
+}
+function endErase(e) {
+  erasing = false;
+  boardEl.value.releasePointerCapture(e.pointerId);
 }
 
 /* ---- Pan: drag the canvas to move around the frame ---- */
@@ -143,6 +188,7 @@ let pan = null;
 function onBoardDown(e) {
   if (e.button !== 0) return;
   if (tool.value === 'draw') return startStroke(e);
+  if (tool.value === 'eraser') return startErase(e);
   if (tool.value !== 'pan' && e.target.closest('.note')) return;
   panning.value = true;
   pan = { x: e.clientX, y: e.clientY, left: boardEl.value.scrollLeft, top: boardEl.value.scrollTop };
@@ -150,12 +196,14 @@ function onBoardDown(e) {
 }
 function onBoardMove(e) {
   if (drawing.value) return extendStroke(e);
+  if (erasing) return eraseAt(e);
   if (!pan) return;
   boardEl.value.scrollLeft = pan.left - (e.clientX - pan.x);
   boardEl.value.scrollTop = pan.top - (e.clientY - pan.y);
 }
 function onBoardUp(e) {
   if (drawing.value) return finishStroke(e);
+  if (erasing) return endErase(e);
   if (!pan) return;
   boardEl.value.releasePointerCapture(e.pointerId);
   pan = null;
@@ -426,7 +474,7 @@ function onMiniUp(e) {
               v-if="drawing"
               :d="pointsToPath(drawing.points)"
               :stroke="drawColor"
-              :stroke-width="STROKE_STYLES[drawTool].width"
+              :stroke-width="drawWidth"
               :opacity="strokeOpacity(drawTool)"
             />
           </svg>
@@ -511,28 +559,54 @@ function onMiniUp(e) {
       </template>
     </div>
 
-    <!-- Draw sub-toolbar (only while the draw tool is active) -->
-    <div v-if="tool === 'draw'" class="drawbar">
-      <button
-        v-for="d in drawTools"
-        :key="d.id"
-        class="drawbar__btn"
-        :class="{ active: drawTool === d.id }"
-        :data-tip="d.label"
-        @click="drawTool = d.id"
-      >
-        {{ d.icon }}
-      </button>
-      <span class="drawbar__sep" />
-      <button
-        v-for="c in drawColors"
-        :key="c"
-        class="drawbar__swatch"
-        :class="{ on: drawColor === c }"
-        :style="{ background: c }"
-        :title="c"
-        @click="drawColor = c"
-      />
+    <!-- Draw / eraser sub-toolbar -->
+    <div v-if="tool === 'draw' || tool === 'eraser'" class="drawbar">
+      <template v-if="tool === 'draw'">
+        <button
+          v-for="d in drawTools"
+          :key="d.id"
+          class="drawbar__btn"
+          :class="{ active: drawTool === d.id }"
+          :data-tip="d.label"
+          @click="selectDrawTool(d.id)"
+        >
+          {{ d.icon }}
+        </button>
+        <span class="drawbar__sep" />
+        <button
+          v-for="c in drawColors"
+          :key="c"
+          class="drawbar__swatch"
+          :class="{ on: drawColor === c }"
+          :style="{ background: c }"
+          :title="c"
+          @click="drawColor = c"
+        />
+        <span class="drawbar__sep" />
+        <input
+          v-model.number="drawWidth"
+          type="range"
+          min="1"
+          max="30"
+          class="drawbar__slider"
+          title="Thickness"
+        />
+        <span class="drawbar__num">{{ drawWidth }}px</span>
+      </template>
+
+      <template v-else>
+        <span class="drawbar__label">Eraser size</span>
+        <button
+          v-for="es in eraserSizes"
+          :key="es.id"
+          class="drawbar__btn"
+          :class="{ active: eraserSize === es.r }"
+          :data-tip="es.label"
+          @click="eraserSize = es.r"
+        >
+          {{ es.label[0] }}
+        </button>
+      </template>
     </div>
 
     <!-- Floating toolbox (footer) -->
@@ -610,7 +684,8 @@ function onMiniUp(e) {
   cursor: grabbing;
 }
 .board.tool-connect,
-.board.tool-draw {
+.board.tool-draw,
+.board.tool-eraser {
   cursor: crosshair;
 }
 .board::-webkit-scrollbar {
@@ -811,6 +886,24 @@ function onMiniUp(e) {
 .drawbar__swatch.on {
   outline: 2px solid var(--color-primary);
   outline-offset: 1px;
+}
+.drawbar__slider {
+  width: 90px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+.drawbar__num {
+  min-width: 34px;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-align: right;
+}
+.drawbar__label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  padding: 0 var(--space-2);
 }
 
 /* ---- Floating toolbox ---- */
