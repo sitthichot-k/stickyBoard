@@ -1,0 +1,75 @@
+# ─────────────────────────────────────────────────────────────
+# Single Compose file — DEVELOPMENT by default.
+#
+#   docker compose up            → dev stack: source is bind-mounted and the
+#                                  dev servers watch files, so edits to frontend
+#                                  or backend code are live WITHOUT a rebuild.
+#                                  Only dependency changes need `--build`.
+#
+# For a PRODUCTION build (built images, no mounts), set the prod build targets
+# and drop the dev `command`/`volumes`:
+#   backend  → build.target: prod   (and NODE_ENV=production)
+#   frontend → build.target: serve  (nginx)
+# ─────────────────────────────────────────────────────────────
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-stickyBoard}
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "${MONGO_PORT:-27018}:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      target: dev
+      args:
+        BACKEND_PORT: ${BACKEND_PORT:-8081}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: ${BACKEND_PORT:-8081}
+      MONGODB_URI: mongodb://mongo:27017/${MONGO_DB:-stickyBoard}
+      CORS_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:8080}
+    # nodemon with -L (legacy/polling watch) — required for Windows bind mounts.
+    command: ["npx", "nodemon", "-L", "src/server.js"]
+    volumes:
+      - ./backend/src:/app/src
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8081}:${BACKEND_PORT:-8081}"
+
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    restart: unless-stopped
+    environment:
+      # Vite listens on container port 80 so it matches the "8080:80" mapping.
+      PORT: 80
+      # The browser (on the host) calls the backend's published port directly.
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8081/api}
+      # Enable chokidar polling so HMR works over Windows bind mounts.
+      USE_POLLING: "true"
+    command: ["npm", "run", "dev"]
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.js:/app/vite.config.js
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+
+volumes:
+  mongo-data:

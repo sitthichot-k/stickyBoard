@@ -1,0 +1,25 @@
+# Root-level ignores (each module has its own .gitignore too)
+
+# Secrets / environment (keep the *.example templates committed)
+.env
+.env.*
+!.env.example
+
+# Dependencies & build output (defensive — modules ignore their own too)
+node_modules/
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Local tooling / agent config
+.claude/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
