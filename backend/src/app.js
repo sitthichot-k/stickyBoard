@@ -17,8 +17,6 @@ app.use(express.urlencoded({ extended: true }));
 
 // API routes — versioned under /api/v1.
 app.use('/api/v1', routes);
-// Legacy unversioned alias — temporary, until the frontend moves to /api/v1.
-app.use('/api', routes);
 
 // 404 + error handling (must be registered last)
 app.use(notFound);

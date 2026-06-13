@@ -58,7 +58,7 @@ services:
       # Vite listens on container port 80 so it matches the "8080:80" mapping.
       PORT: 80
       # The browser (on the host) calls the backend's published port directly.
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:8081/api}
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8081/api/v1}
       # Enable chokidar polling so HMR works over Windows bind mounts.
       USE_POLLING: "true"
     command: ["npm", "run", "dev"]
