@@ -11,7 +11,7 @@ A separate `users` collection backs authentication (see below).
 
 ## User
 
-`backend/src/models/user.model.js`
+`backend/src/modules/user/models/user.model.js`
 
 | Field | Type | Default | Notes |
 | --- | --- | --- | --- |
@@ -23,7 +23,7 @@ A separate `users` collection backs authentication (see below).
 
 ## Sheet
 
-`backend/src/models/sheet.model.js`
+`backend/src/modules/sheet/models/sheet.model.js`
 
 | Field | Type | Default | Notes |
 | --- | --- | --- | --- |
@@ -34,7 +34,7 @@ A separate `users` collection backs authentication (see below).
 
 ## Note
 
-`backend/src/models/note.model.js`
+`backend/src/modules/note/models/note.model.js`
 
 | Field | Type | Default | Notes |
 | --- | --- | --- | --- |
@@ -52,7 +52,7 @@ Writable fields from the client are whitelisted in the note controller
 
 ## Connection
 
-`backend/src/models/connection.model.js` — an arrow from one note to another.
+`backend/src/modules/connection/models/connection.model.js` — an arrow from one note to another.
 
 | Field | Type | Default | Notes |
 | --- | --- | --- | --- |
@@ -66,7 +66,7 @@ Writable fields from the client are whitelisted in the note controller
 
 ## Stroke
 
-`backend/src/models/stroke.model.js` — a freehand drawing on a sheet.
+`backend/src/modules/stroke/models/stroke.model.js` — a freehand drawing on a sheet.
 
 | Field | Type | Default | Notes |
 | --- | --- | --- | --- |

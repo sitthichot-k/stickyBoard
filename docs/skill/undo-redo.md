@@ -1,6 +1,6 @@
 # Skill: Undo / Redo
 
-Implemented in `frontend/src/stores/notes.js` with a **command pattern** backed
+Implemented in `frontend/src/modules/board/stores/notes.js` with a **command pattern** backed
 by the soft-delete/restore API, so undo persists correctly to the server.
 
 ## Model

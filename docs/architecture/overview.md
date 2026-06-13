@@ -19,16 +19,18 @@ Browser (Vue SPA)
    │  axios → /api
    ▼
 Express API  ──►  Mongoose  ──►  MongoDB
- routes → controllers → services → models
+ routes → controller → service → models   (per feature module)
 ```
 
 - **Frontend** renders the board, handles all interaction (drag, pan, connect,
   resize, undo/redo), and talks to the API through a thin axios client.
-- **Backend** is a conventional layered REST API. Business/data logic lives in
-  *services*; controllers only do request/response plumbing.
-- **MongoDB** stores `sheets`, `notes`, and `connections` (notes/arrows are
-  scoped to a sheet). Deletes are **soft** (a `deletedAt` marker) so they can be
-  undone.
+- **Backend** is a REST API organised by **feature module**
+  (`modules/<feature>/{controller,models,service}/` + routes). Business/data
+  logic lives in *services*; controllers only do request/response plumbing.
+- **Frontend** and **backend** both use a feature-module layout with shared code
+  in `helpers/` and shared UI in `components/`.
+- **MongoDB** stores `users`, `sheets`, `notes`, `connections`, and `strokes`.
+  Deletes are **soft** (a `deletedAt` marker) so they can be undone.
 
 ## Ports (defaults)
 

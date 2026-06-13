@@ -1,10 +1,11 @@
 # Skill: Creating a CRUD Module
 
-Every backend feature follows the same shape: `model → service → controller →
-routes`, with the service composed from `createBaseService`. Follow this to add
-a new module (example: `tag`).
+Every backend feature is its own folder `modules/<feature>/` with
+`controller/`, `models/`, `service/`, and a `<feature>.routes.js` — the service
+composed from `createBaseService`. Follow this to add a new module
+(example: `tag` → `modules/tag/`).
 
-## 1. Model — `models/tag.model.js`
+## 1. Model — `modules/tag/models/tag.model.js`
 
 ```js
 import mongoose from 'mongoose';
@@ -32,13 +33,13 @@ const tagSchema = new mongoose.Schema(
 export const Tag = mongoose.model('Tag', tagSchema);
 ```
 
-## 2. Service — `services/tag.service.js`
+## 2. Service — `modules/tag/service/tag.service.js`
 
 Compose the base service; override/extend only what differs.
 
 ```js
 import { Tag } from '../models/tag.model.js';
-import { createBaseService } from './base.service.js';
+import { createBaseService } from '../../../helpers/base.service.js';
 
 const base = createBaseService(Tag, { searchableFields: ['name'] });
 
@@ -51,23 +52,26 @@ export const restoreTag = (id) =>
   Tag.findByIdAndUpdate(id, { deletedAt: null }, { new: true });
 ```
 
-## 3. Controller — `controllers/tag.controller.js`
+## 3. Controller — `modules/tag/controller/tag.controller.js`
 
-Thin: parse the request, call the service, shape the response. Mirror
-`note.controller.js` / `connection.controller.js`.
+Thin: parse the request, call the service (`../service/tag.service.js`), shape
+the response. Mirror `modules/note/controller/note.controller.js`.
 
-## 4. Routes — `routes/tag.routes.js` + mount it
+## 4. Routes — `modules/tag/tag.routes.js` + mount it
 
 ```js
-// routes/index.js
-import tagRoutes from './tag.routes.js';
-router.use('/tags', tagRoutes);
+// modules/tag/tag.routes.js → import controller from './controller/tag.controller.js'
+
+// src/routes/routes.js
+import tagRoutes from '../modules/tag/tag.routes.js';
+router.use('/tags', requireAuth, tagRoutes);
 ```
 
 ## 5. Frontend (if needed)
 
-Add an `api/tags.js` wrapper (mirror `api/notes.js`) and, if it needs shared
-state, a Pinia store or fields on the existing one.
+Add `modules/<feature>/api/<feature>.js` (mirror `modules/board/api/notes.js`,
+importing `@/helpers/http.js`) and, if it needs shared state, a Pinia store
+under the module's `stores/`.
 
 ## Conventions
 

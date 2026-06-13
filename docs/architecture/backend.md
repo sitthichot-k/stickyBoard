@@ -2,34 +2,44 @@
 
 Express + Mongoose REST API under `backend/src/`. ESM (`"type": "module"`).
 
-## Layers
+## Structure (feature modules)
 
 ```
-routes/        URL → controller wiring (thin)
-controllers/   parse request, shape response, call a service
-services/      business logic + DB queries (the real work)
-models/        Mongoose schemas
-middleware/    cross-cutting: error handler, 404
-config/        env loading, Mongoose connection
+backend/src/
+├── routes/      app.js · routes.js (aggregator) · server.js · seed.js
+├── config/      env.js · db.js
+├── middleware/  auth.js · errorHandler.js · logger.js   (shared infra)
+├── helpers/     base.service.js                         (shared code)
+└── modules/<feature>/
+    ├── controller/  <feature>.controller.js   parse request, shape response
+    ├── models/      <feature>.model.js        Mongoose schema(s)
+    ├── service/     <feature>.service.js       business logic + DB queries
+    └── <feature>.routes.js                     URL → controller wiring (thin)
 ```
 
-Request flow: `routes → controllers → services → models`. Controllers never
-touch Mongoose directly; they call services.
+Each module bundles everything for one feature; a module only has the
+subfolders it needs (e.g. `user` has just models/ + service/; `auth` has
+controller/ + routes). Request flow: `routes → controller → service → models`.
+Controllers never touch Mongoose directly; they call services. Cross-module
+imports are allowed (e.g. `auth` uses the `user` service).
 
-## Bootstrapping
+Modules: `health · auth · user · admin · sheet · note · connection · stroke`.
 
-- `server.js` — entry point: connects the DB, starts the HTTP server, handles
-  graceful shutdown (SIGINT/SIGTERM).
-- `app.js` — assembles the Express app: a request logger, CORS, JSON body
-  parsing, mounts the API under `/api/v1`, then the 404 + error middleware
-  (registered last).
-- `config/env.js` — single source of config, read from environment with sane
-  defaults. Exposes `env` and `isProduction`.
+## Bootstrapping (`routes/`)
+
+- `routes/server.js` — entry point: connects the DB, starts the HTTP server,
+  handles graceful shutdown (SIGINT/SIGTERM).
+- `routes/app.js` — assembles the Express app: a request logger, CORS, JSON body
+  parsing, mounts the API under `/api/v1`, then the 404 + error middleware.
+- `routes/routes.js` — aggregator: mounts every module router with the right
+  auth guards (`requireAuth` / `requireAdmin`).
+- `routes/seed.js` — sample data + seed admin (`npm run seed`).
+- `config/env.js` — single source of config (`env`, `isProduction`).
 - `config/db.js` — `connectDatabase()` / `disconnectDatabase()`.
 
 ## The base service pattern
 
-`services/base.service.js` exports `createBaseService(model, options)` — a
+`helpers/base.service.js` exports `createBaseService(model, options)` — a
 factory that returns the five operations every module needs:
 
 | Method | Behaviour |
@@ -48,7 +58,7 @@ Feature services compose it instead of re-implementing CRUD. See
 Login-only (no public sign-up). `POST /auth/login` verifies a bcrypt password and
 returns a JWT; `middleware/auth.js` exposes `requireAuth` (verifies the bearer
 token → `req.user`) and `requireAdmin` (role check). Data routes are mounted
-behind `requireAuth` in `routes/index.js`; admin routes also use `requireAdmin`.
+behind `requireAuth` in `routes/routes.js`; admin routes also use `requireAdmin`.
 Config lives in `config/env.js` (`jwt.secret`, `jwt.expiresIn`, seed admin).
 
 ## Feature modules
