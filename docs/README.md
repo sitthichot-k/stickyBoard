@@ -10,6 +10,7 @@ Developer documentation for **Sticky Board** — a sticky-notes whiteboard
 | [architecture/](architecture/) | How the system is built — stack, layers, data model, REST API. |
 | [skill/](skill/) | Reusable patterns/how-tos used across the codebase (CRUD module, soft delete, undo/redo). |
 | [agents/](agents/) | Conventions & guardrails for AI agents / contributors working on the repo. |
+| [AI-flow/](AI-flow/) | The phase-by-phase workflow for driving AI on this project (Backend → Frontend → Test/Docs). |
 
 ## Quick start
 
