@@ -8,10 +8,12 @@ Vue Router, HTTP via axios.
 ```
 main.js              app bootstrap (Pinia + Router + global CSS)
 App.vue              shell: sidebar (brand + nav) + theme toggle + <RouterView>
-router/index.js      routes: '/' sheets, '/sheet/:id' board, '/tools/{merge,scan}-pdf'
-api/                 axios client + endpoint wrappers (http, sheets, notes, connections, strokes)
+router/index.js      routes + global auth guard ('/login' is the only public route)
+api/                 axios client + endpoint wrappers (http, auth, sheets, notes, connections, strokes)
+stores/auth.js       Pinia store — token + current user (login/logout/fetchMe)
 stores/sheets.js     Pinia store — sheet list + current sheet
 stores/notes.js      Pinia store — notes, connections, strokes, undo/redo (per sheet)
+views/LoginView.vue  full-screen sign-in (no shell)
 views/SheetsView.vue landing: list sheets + create (name + background)
 views/BoardView.vue  the canvas: pan, tools, arrows, toolbox (per sheet)
 views/MergePdfView.vue  tool: merge PDFs in-browser (pdf-lib)

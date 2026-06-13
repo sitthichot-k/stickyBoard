@@ -43,6 +43,14 @@ factory that returns the five operations every module needs:
 Feature services compose it instead of re-implementing CRUD. See
 [../skill/creating-a-crud-module.md](../skill/creating-a-crud-module.md).
 
+## Auth
+
+Login-only (no public sign-up). `POST /auth/login` verifies a bcrypt password and
+returns a JWT; `middleware/auth.js` exposes `requireAuth` (verifies the bearer
+token → `req.user`) and `requireAdmin` (role check). Data routes are mounted
+behind `requireAuth` in `routes/index.js`; admin routes also use `requireAdmin`.
+Config lives in `config/env.js` (`jwt.secret`, `jwt.expiresIn`, seed admin).
+
 ## Feature modules
 
 - **notes** — the sticky notes. `note.service.js` wraps the base service; it

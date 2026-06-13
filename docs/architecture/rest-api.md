@@ -13,6 +13,20 @@ Every request is logged server-side with a **business code** = HTTP status × 10
 
 Error responses include that code: `{ "code": 40400, "error": "..." }`.
 
+## Auth
+
+The whole app requires login (no public sign-up — users are seeded or created by
+an admin). Protected endpoints need an `Authorization: Bearer <token>` header.
+
+| Method | Path | Description |
+| --- | --- | --- |
+| POST | `/api/v1/auth/login` | body `{ email, password }` → `{ token, user }` (JWT) |
+| GET | `/api/v1/auth/me` | current user (requires token) |
+
+`health` and `auth/login` are public; **all other endpoints below require a
+valid token**, and admin-only endpoints additionally require the `admin` role
+(`401` without a token, `403` without the role).
+
 ## Health
 
 | Method | Path | Description |

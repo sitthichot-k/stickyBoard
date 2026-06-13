@@ -158,11 +158,11 @@ admin (or seeded). Roles: `user` and `admin`.
 
 | FR | Requirement | Status |
 | --- | --- | --- |
-| FR-AUTH-001 | User model: email, hashed password, name, role (`user`/`admin`). | 🟡 |
-| FR-AUTH-002 | `POST /auth/login` returns a JWT + user; `GET /auth/me` returns the current user. | 🟡 |
-| FR-AUTH-003 | Data endpoints require a valid token; admin endpoints require the `admin` role. | 🟡 |
-| FR-AUTH-004 | Frontend requires login for the whole app (route guard → `/login`); logout clears the session. | ⬜ |
-| FR-AUTH-005 | No public registration — users are seeded or created by an admin. | 🟡 |
+| FR-AUTH-001 | User model: email, hashed password, name, role (`user`/`admin`). | ✅ |
+| FR-AUTH-002 | `POST /auth/login` returns a JWT + user; `GET /auth/me` returns the current user. | ✅ |
+| FR-AUTH-003 | Data endpoints require a valid token; admin endpoints require the `admin` role. | ✅ |
+| FR-AUTH-004 | Frontend requires login for the whole app (route guard → `/login`); logout clears the session. | ✅ |
+| FR-AUTH-005 | No public registration — users are seeded or created by an admin. | ✅ |
 
 ### 3.14 Planned (not started)
 

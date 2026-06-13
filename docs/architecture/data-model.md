@@ -7,6 +7,20 @@ use Mongoose `timestamps` and a `toJSON` transform that exposes `id` (instead of
 A **sheet** is a board that owns its notes, arrows, and drawings. Every
 note/connection/stroke references its sheet via `sheetId`.
 
+A separate `users` collection backs authentication (see below).
+
+## User
+
+`backend/src/models/user.model.js`
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `email` | String | — | required, unique, lowercased |
+| `passwordHash` | String | — | bcrypt hash (never exposed in `toJSON`) |
+| `name` | String | `''` | display name |
+| `role` | enum user/admin | `user` | authorisation role |
+| `deletedAt` | Date | `null` | soft-delete marker |
+
 ## Sheet
 
 `backend/src/models/sheet.model.js`
