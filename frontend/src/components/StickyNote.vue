@@ -6,6 +6,8 @@ const props = defineProps({
   colors: { type: Array, default: () => [] },
   // Active board tool: 'select' | 'pan' | 'connect'.
   tool: { type: String, default: 'select' },
+  // Board zoom factor — drag/resize deltas are divided by it.
+  zoom: { type: Number, default: 1 },
 });
 
 const emit = defineEmits([
@@ -45,8 +47,9 @@ function onPointerDown(e) {
 
 function onPointerMove(e) {
   if (!start) return;
-  const x = Math.max(0, start.x + (e.clientX - start.px));
-  const y = Math.max(0, start.y + (e.clientY - start.py));
+  // Screen delta → frame delta (the board may be zoomed).
+  const x = Math.max(0, start.x + (e.clientX - start.px) / props.zoom);
+  const y = Math.max(0, start.y + (e.clientY - start.py) / props.zoom);
   emit('move', { x, y }); // local update only — no API call mid-drag
 }
 
@@ -70,8 +73,8 @@ function onResizeDown(e) {
 
 function onResizeMove(e) {
   if (!rs) return;
-  const width = Math.max(140, rs.w + (e.clientX - rs.px));
-  const height = Math.max(120, rs.h + (e.clientY - rs.py));
+  const width = Math.max(140, rs.w + (e.clientX - rs.px) / props.zoom);
+  const height = Math.max(120, rs.h + (e.clientY - rs.py) / props.zoom);
   emit('move', { width, height }); // local update only
 }
 
