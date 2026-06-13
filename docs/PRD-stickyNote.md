@@ -180,8 +180,8 @@ Admin-only analytics overview.
 
 | FR | Requirement | Status |
 | --- | --- | --- |
-| FR-DASH-001 | `GET /admin/stats` returns counts, top sheets by notes, and a 14-day activity series. | 🟡 |
-| FR-DASH-002 | Admin Dashboard page: KPI cards + charts (in the Admin sidebar group). | ⬜ |
+| FR-DASH-001 | `GET /admin/stats` returns counts, top sheets by notes, and a 14-day activity series. | ✅ |
+| FR-DASH-002 | Admin Dashboard page: KPI cards + charts (in the Admin sidebar group). | ✅ |
 
 > Build order: PDF tools (FR-PDF / FR-SCAN) first, then auth-gated admin
 > features (FR-ADMIN / FR-DASH). See the roadmap discussion.
