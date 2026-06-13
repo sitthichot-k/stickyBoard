@@ -40,6 +40,7 @@ function logout() {
 
         <template v-if="auth.isAdmin">
           <span class="sidebar__group">Admin</span>
+          <RouterLink to="/admin/dashboard">📊 Dashboard</RouterLink>
           <RouterLink to="/admin/users">👥 Users</RouterLink>
         </template>
       </nav>

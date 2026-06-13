@@ -29,6 +29,12 @@ const routes = [
     component: () => import('@/views/ScanPdfView.vue'),
   },
   {
+    path: '/admin/dashboard',
+    name: 'admin-dashboard',
+    component: () => import('@/views/DashboardView.vue'),
+    meta: { admin: true },
+  },
+  {
     path: '/admin/users',
     name: 'admin-users',
     component: () => import('@/views/UsersView.vue'),

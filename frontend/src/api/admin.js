@@ -1,5 +1,9 @@
 import http from './http.js';
 
+export function fetchStats() {
+  return http.get('/admin/stats').then((res) => res.data);
+}
+
 export function fetchUsers() {
   return http.get('/admin/users').then((res) => res.data);
 }
