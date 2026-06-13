@@ -1,110 +1,105 @@
 # Sticky Board — Vue + Node + MongoDB
 
-A sticky-note board web app (built on a reusable full-stack template). Users can
-add notes anywhere on the board, drag them around, edit the text, recolor them,
-and delete them — all persisted to MongoDB.
+A whiteboard web app. Create **sheets**, drop sticky **notes** on an infinite
+canvas, connect them with **arrows**, **draw** freehand, and zoom/pan around —
+all persisted to MongoDB with full **undo/redo**. Ships with **login + roles**,
+an **admin** area (user management + analytics dashboard), and two client-side
+**PDF tools** (Merge PDF, Scan to PDF).
 
-| Layer    | Stack                              | Port |
-| -------- | ---------------------------------- | ---- |
-| Frontend | Vue 3 + Vite + Pinia + Vue Router  | 8080 |
-| Backend  | Node + Express + Mongoose          | 8081 |
-| Database | MongoDB                            | 27017 |
+| Layer    | Stack                              | Port  |
+| -------- | ---------------------------------- | ----- |
+| Frontend | Vue 3 + Vite + Pinia + Vue Router  | 8080  |
+| Backend  | Node + Express + Mongoose          | 8081  |
+| Database | MongoDB                            | 27018 |
 
-Each module is independently containerised so its environment can be controlled in isolation.
+## Features
+
+- **Board** — sheets (dots/grid/blank background), draggable & resizable notes,
+  note-to-note arrows (4 anchors, elbow routing, self-loops), freehand drawing
+  (pencil/pen/brush + eraser), pan, zoom (30–200%), and a collapsible minimap.
+- **Undo / redo** — every action, persisted (built on soft-delete + restore).
+- **Auth** — login-only (no public sign-up), JWT, `user`/`admin` roles; the
+  whole app is behind a login guard.
+- **Admin** — manage users (create / change role / delete) and a dashboard
+  (KPIs + activity/top-sheet charts).
+- **Tools** — Merge PDF and Scan to PDF (images→A4, incl. iOS HEIC), entirely
+  in the browser.
+- **API** — versioned under `/api/v1`, request logging with business codes.
 
 ## Project structure
 
+Both apps use a **feature-module** layout (see [docs/](docs/) for details).
+
 ```
-.
-├── docker-compose.yml            # single stack — dev by default (mounts + hot reload)
-├── .env.example                  # compose-level variables (ports, db name, …)
-├── backend/
-│   ├── Dockerfile                # multi-stage: dev (nodemon) | prod (node)
-│   ├── .dockerignore / .env.example
-│   └── src/
-│       ├── server.js             # entry point (listen + graceful shutdown)
-│       ├── app.js                # express app assembly
-│       ├── config/               # env + mongoose connection
-│       ├── routes/               # route definitions (health, notes)
-│       ├── controllers/          # request/response handling
-│       ├── services/             # business logic + DB queries (base.service.js + Note)
-│       ├── models/               # mongoose schemas (Note)
-│       ├── middleware/           # error handler, 404
-│       └── seed.js               # sample notes
-└── frontend/
-    ├── Dockerfile                # multi-stage: dev (vite) | build | serve (nginx)
-    ├── default.conf.template     # nginx: SPA fallback + /api proxy (port from env)
-    ├── .dockerignore / .env.example
-    └── src/
-        ├── main.js / App.vue
-        ├── router/ stores/ api/  # routing, pinia stores, axios client
-        ├── styles/               # tokens.css (theme) + main.css
-        ├── components/
-        │   ├── StickyNote.vue     # draggable, editable note
-        │   └── ui/                # Button, Alert
-        └── views/                # Board (home)
+backend/src/
+├── config/      env.js · db.js
+├── middleware/  auth · errorHandler · logger
+├── helpers/     base.service.js          (shared CRUD factory)
+├── routes/      app · routes (aggregator) · server · seed
+└── modules/<feature>/   controller/ · models/ · service/ · <feature>.routes.js
+        health · auth · user · admin · sheet · note · connection · stroke
+
+frontend/src/
+├── helpers/http.js   (axios client)        components/ (shared Base* UI)
+├── router/  styles/  App.vue  main.js
+└── modules/<feature>/   api/ · stores/ · components/ · views/
+        auth · board · admin · tools
 ```
 
-## Run with Docker
-
-### Development (hot reload — no rebuild on code changes)
-
-`docker compose up` runs the single `docker-compose.yml`, which bind-mounts the
-source folders and runs the dev servers with file watching:
+## Run with Docker (dev — hot reload)
 
 ```bash
-docker compose up --build      # first run builds the dev images
-docker compose exec backend npm run seed   # add sample data
+docker compose up --build                      # first run builds the dev images
+docker compose exec backend npm run seed       # sample data + seed users
 ```
 
-- Edit anything under `backend/src` → **nodemon** restarts the server.
-- Edit anything under `frontend/src` → **Vite HMR** updates the browser.
-- Only changing dependencies (`package.json`) needs a rebuild.
+- Edit `backend/src` → **nodemon** restarts; edit `frontend/src` → **Vite HMR**.
+- Only dependency changes (`package.json`) need `--build`.
+- After moving/renaming files or changing `docker-compose.yml`, recreate:
+  `docker compose up -d --force-recreate`.
+
+Then open **http://localhost:8080** and sign in:
+
+| Role  | Email                | Password    |
+| ----- | -------------------- | ----------- |
+| admin | `admin@example.com`  | `admin1234` |
+| user  | `user@example.com`   | `user1234`  |
+
+> No public registration — admins create users from **Admin → Users**.
 
 ### Production (built images, nginx)
 
-For a production build, set the prod build targets in `docker-compose.yml`
-(`backend` → `target: prod`, `frontend` → `target: serve`) and remove the dev
-`command`/`volumes` from those services, then:
-
-```bash
-docker compose up --build
-```
-
-Then:
+Set the prod build targets in `docker-compose.yml` (`backend` → `target: prod`,
+`frontend` → `target: serve`), drop the dev `command`/`volumes`, set a strong
+`JWT_SECRET`, then `docker compose up --build`.
 
 - Frontend → http://localhost:8080
-- Backend API → http://localhost:8081/api/health
-- MongoDB → localhost:27018
+- Backend health → http://localhost:8081/api/v1/health
 
 ## Run locally (without Docker)
 
 ```bash
-# 1. MongoDB must be running on localhost:27017
-
-# 2. Backend
-cd backend && cp .env.example .env && npm install
-npm run seed      # populate sample notes
-npm run dev       # http://localhost:8081
-
-# 3. Frontend
-cd ../frontend && cp .env.example .env && npm install
-npm run dev       # http://localhost:8080
+# MongoDB must be running (the backend .env points at localhost:27017)
+cd backend  && cp .env.example .env && npm install && npm run seed && npm run dev
+cd frontend && cp .env.example .env && npm install && npm run dev
 ```
 
-## Notes API
+## API
 
-| Method | Path             | Purpose                              |
-| ------ | ---------------- | ------------------------------------ |
-| GET    | `/api/notes`     | list all notes                       |
-| POST   | `/api/notes`     | create a note                        |
-| PATCH  | `/api/notes/:id` | partial update (move / edit / color) |
-| DELETE | `/api/notes/:id` | delete a note                        |
+Versioned under `/api/v1`. `health` and `auth/login` are public; everything else
+needs an `Authorization: Bearer <token>`, and `/admin/*` needs the `admin` role.
+Full reference: [docs/architecture/rest-api.md](docs/architecture/rest-api.md).
 
-## Customising
+## Documentation
 
-- **Theme/colors** → `frontend/src/styles/tokens.css` (CSS variables; includes a dark theme).
-- **Note colors** → the `COLORS` array in `frontend/src/stores/notes.js`.
-- **New API resource** → add a model → service → controller → route, then mount it in `backend/src/routes/index.js`.
-- **New page** → add a view in `frontend/src/views/` and a route in `frontend/src/router/index.js`.
-- **Ports** → edit the root `.env` (`BACKEND_PORT`, `FRONTEND_PORT`, `MONGO_PORT`).
+- [docs/](docs/) — architecture, data model, REST API, and how-to "skills".
+- [docs/PRD-stickyNote.md](docs/PRD-stickyNote.md) — product requirements (FR ids).
+- [docs/AI-flow/](docs/AI-flow/) — the phase-by-phase workflow used to build this.
+
+## Extending
+
+- **New backend module** → [docs/skill/creating-a-crud-module.md](docs/skill/creating-a-crud-module.md).
+- **New page** → add a view under `frontend/src/modules/<feature>/views/` and a
+  route in `frontend/src/router/index.js`.
+- **Theme / colours** → `frontend/src/styles/tokens.css`.
+- **Ports / secrets** → the root `.env` and `backend/.env` (`JWT_SECRET`, …).
