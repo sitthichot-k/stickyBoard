@@ -10,13 +10,13 @@ reference document for AI-flow prompts: every task cites a `Feature` and the
 
 ## 1. Vision & scope
 
-A lightweight, single-board whiteboard where a user drops sticky notes on an
-infinite canvas, connects them with arrows, and edits freely — with everything
-persisted and every action undoable.
+A lightweight whiteboard where a user creates **sheets** (boards), drops sticky
+notes on an infinite canvas, connects them with arrows, and edits freely — with
+everything persisted and every action undoable.
 
-**In scope:** one shared board, notes, arrows, undo/redo, theming.
-**Out of scope (now):** authentication, multiple boards, real-time multi-user
-collaboration, export/import, image/file attachments, comments.
+**In scope:** multiple sheets, notes, arrows, undo/redo, theming.
+**Out of scope (now):** authentication, real-time multi-user collaboration,
+export/import, image/file attachments, comments.
 
 ## 2. Personas
 
@@ -82,13 +82,13 @@ Each sheet owns its own notes and arrows and has a chosen background.
 
 | FR | Requirement | Status |
 | --- | --- | --- |
-| FR-SHEET-001 | Landing page lists existing sheets and offers "Create blank sheet"; the note board is reachable only via a sheet. | 🟡 (backend done) |
-| FR-SHEET-002 | Create a sheet with a name. | ✅ (backend) |
-| FR-SHEET-003 | Choose a sheet background: `dots`, `grid`, or `blank`. | ✅ (backend) |
-| FR-SHEET-004 | Open a sheet to its scoped note board. | 🟡 (backend done) |
-| FR-SHEET-005 | Notes and connections belong to a sheet (scoped by `sheetId`). | ✅ (backend) |
-| FR-SHEET-006 | Deleting a sheet removes its notes and arrows. | ✅ (backend) |
-| FR-SHEET-007 | The board renders the sheet's chosen background. | ⬜ (frontend) |
+| FR-SHEET-001 | Landing page lists existing sheets and offers "Create blank sheet"; the note board is reachable only via a sheet. | ✅ |
+| FR-SHEET-002 | Create a sheet with a name. | ✅ |
+| FR-SHEET-003 | Choose a sheet background: `dots`, `grid`, or `blank`. | ✅ |
+| FR-SHEET-004 | Open a sheet to its scoped note board. | ✅ |
+| FR-SHEET-005 | Notes and connections belong to a sheet (scoped by `sheetId`). | ✅ |
+| FR-SHEET-006 | Deleting a sheet removes its notes and arrows. | ✅ |
+| FR-SHEET-007 | The board renders the sheet's chosen background. | ✅ |
 
 ### 3.6 Backend & persistence — `Feature: API`
 

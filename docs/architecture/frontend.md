@@ -8,10 +8,12 @@ Vue Router, HTTP via axios.
 ```
 main.js              app bootstrap (Pinia + Router + global CSS)
 App.vue              shell: sidebar (brand + nav) + theme toggle + <RouterView>
-router/index.js      routes (currently just the Board)
-api/                 axios client + endpoint wrappers (http, notes, connections)
-stores/notes.js      Pinia store — notes, connections, undo/redo history
-views/BoardView.vue  the canvas: pan, tools, arrows, toolbox
+router/index.js      routes: '/' sheets list, '/sheet/:id' board
+api/                 axios client + endpoint wrappers (http, sheets, notes, connections)
+stores/sheets.js     Pinia store — sheet list + current sheet
+stores/notes.js      Pinia store — notes, connections, undo/redo (scoped to a sheet)
+views/SheetsView.vue landing: list sheets + create (name + background)
+views/BoardView.vue  the canvas: pan, tools, arrows, toolbox (per sheet)
 components/
   StickyNote.vue     a single note: drag, edit, resize, recolor, link anchors
   ui/                BaseButton, BaseAlert

@@ -26,8 +26,9 @@ Express API  ──►  Mongoose  ──►  MongoDB
   resize, undo/redo), and talks to the API through a thin axios client.
 - **Backend** is a conventional layered REST API. Business/data logic lives in
   *services*; controllers only do request/response plumbing.
-- **MongoDB** stores `notes` and `connections`. Deletes are **soft** (a
-  `deletedAt` marker) so they can be undone.
+- **MongoDB** stores `sheets`, `notes`, and `connections` (notes/arrows are
+  scoped to a sheet). Deletes are **soft** (a `deletedAt` marker) so they can be
+  undone.
 
 ## Ports (defaults)
 
