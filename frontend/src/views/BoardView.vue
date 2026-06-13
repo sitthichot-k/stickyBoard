@@ -152,34 +152,134 @@ function finishStroke(e) {
   }
 }
 
-/* ---- Eraser (eraser tool): drag over strokes to remove them ---- */
-let erasing = false;
+/* ---- Eraser (eraser tool): partial erase that splits strokes ---- */
+const erasing = ref(false);
+const eraseTick = ref(0); // bump to recompute the live erase preview
+let eraseOriginals = []; // snapshot of strokes at gesture start
+let eraseMasks = null; // Map(strokeId -> boolean[] per point — true = erased)
+let eraseLast = null;
 
-function strokeHit(stroke, p, r) {
-  const pts = stroke.points;
-  const reach = (r + (stroke.width || 1) / 2) ** 2;
-  for (let i = 0; i < pts.length; i += 2) {
-    const dx = pts[i] - p.x;
-    const dy = pts[i + 1] - p.y;
-    if (dx * dx + dy * dy <= reach) return true;
+function markErase(p) {
+  const reach = eraserSize.value * eraserSize.value;
+  for (const o of eraseOriginals) {
+    const mask = eraseMasks.get(o.id);
+    const pts = o.points;
+    for (let i = 0; i < pts.length; i += 2) {
+      if (mask[i / 2]) continue;
+      const dx = pts[i] - p.x;
+      const dy = pts[i + 1] - p.y;
+      if (dx * dx + dy * dy <= reach) mask[i / 2] = true;
+    }
   }
-  return false;
 }
-function eraseAt(e) {
-  const p = toFrame(e.clientX, e.clientY);
-  for (const s of [...strokes.value]) {
-    if (strokeHit(s, p, eraserSize.value)) store.removeStroke(s.id);
+function survivingRuns(points, mask) {
+  const runs = [];
+  let cur = [];
+  for (let i = 0; i < points.length; i += 2) {
+    if (mask[i / 2]) {
+      if (cur.length >= 4) runs.push(cur);
+      cur = [];
+    } else {
+      cur.push(points[i], points[i + 1]);
+    }
   }
+  if (cur.length >= 4) runs.push(cur);
+  return runs;
 }
 function startErase(e) {
-  erasing = true;
+  erasing.value = true;
+  eraseOriginals = strokes.value.map((s) => ({
+    id: s.id,
+    tool: s.tool,
+    color: s.color,
+    width: s.width,
+    points: s.points,
+  }));
+  eraseMasks = new Map(eraseOriginals.map((o) => [o.id, new Array(o.points.length / 2).fill(false)]));
+  eraseLast = null;
   boardEl.value.setPointerCapture(e.pointerId);
-  eraseAt(e);
+  eraseMove(e);
+}
+function eraseMove(e) {
+  const p = toFrame(e.clientX, e.clientY);
+  if (eraseLast) {
+    // Sample along the movement so fast drags don't leave gaps.
+    const dx = p.x - eraseLast.x;
+    const dy = p.y - eraseLast.y;
+    const steps = Math.max(1, Math.floor(Math.hypot(dx, dy) / (eraserSize.value / 2)));
+    for (let i = 1; i <= steps; i++) {
+      markErase({ x: eraseLast.x + (dx * i) / steps, y: eraseLast.y + (dy * i) / steps });
+    }
+  } else {
+    markErase(p);
+  }
+  eraseLast = p;
+  eraseTick.value++;
 }
 function endErase(e) {
-  erasing = false;
   boardEl.value.releasePointerCapture(e.pointerId);
+  // Build the final stroke list: untouched strokes kept, touched ones replaced
+  // by their surviving fragments (temp ids until persisted).
+  const next = [];
+  const originalIds = [];
+  const tempPieces = [];
+  for (const s of strokes.value) {
+    const mask = eraseMasks.get(s.id);
+    if (!mask || !mask.some(Boolean)) {
+      next.push(s);
+      continue;
+    }
+    originalIds.push(s.id);
+    for (const points of survivingRuns(s.points, mask)) {
+      const tempId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const piece = { tool: s.tool, color: s.color, width: s.width, points };
+      next.push({ id: tempId, sheetId: s.sheetId, ...piece });
+      tempPieces.push({ tempId, piece });
+    }
+  }
+  // Commit the final result synchronously, THEN drop the live preview.
+  if (originalIds.length) store.commitErase(next, originalIds, tempPieces);
+  erasing.value = false;
+  eraseOriginals = [];
+  eraseMasks = null;
+  eraseLast = null;
 }
+
+// Strokes to render — during an erase, touched strokes show only their survivors.
+const renderStrokes = computed(() => {
+  eraseTick.value; // reactive dependency
+  const out = [];
+  for (const s of strokes.value) {
+    const mask = erasing.value && eraseMasks ? eraseMasks.get(s.id) : null;
+    const style = { color: s.color, width: s.width, opacity: strokeOpacity(s.tool) };
+    if (!mask || !mask.some(Boolean)) {
+      out.push({ key: s.id, d: pointsToPath(s.points), ...style });
+    } else {
+      survivingRuns(s.points, mask).forEach((run, i) =>
+        out.push({ key: `${s.id}-${i}`, d: pointsToPath(run), ...style }),
+      );
+    }
+  }
+  return out;
+});
+
+/* ---- Cursor: reflect the active tool ---- */
+function svgCursor(emoji) {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28'><text y='22' font-size='22'>${emoji}</text></svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}") 4 24, crosshair`;
+}
+const DRAW_CURSORS = {
+  pencil: svgCursor('✏️'),
+  pen: svgCursor('🖊️'),
+  brush: svgCursor('🖌️'),
+};
+const boardCursor = computed(() => {
+  if (tool.value === 'draw') return DRAW_CURSORS[drawTool.value];
+  if (tool.value === 'eraser') return 'none'; // shown as a circle indicator instead
+  return null;
+});
+const cursorPos = ref({ x: 0, y: 0 });
+const cursorHover = ref(false);
 
 /* ---- Pan: drag the canvas to move around the frame ---- */
 const panning = ref(false);
@@ -195,15 +295,18 @@ function onBoardDown(e) {
   boardEl.value.setPointerCapture(e.pointerId);
 }
 function onBoardMove(e) {
+  // Track the pointer for the tool cursor indicator (eraser circle).
+  const r = boardEl.value.getBoundingClientRect();
+  cursorPos.value = { x: e.clientX - r.left, y: e.clientY - r.top };
   if (drawing.value) return extendStroke(e);
-  if (erasing) return eraseAt(e);
+  if (erasing.value) return eraseMove(e);
   if (!pan) return;
   boardEl.value.scrollLeft = pan.left - (e.clientX - pan.x);
   boardEl.value.scrollTop = pan.top - (e.clientY - pan.y);
 }
 function onBoardUp(e) {
   if (drawing.value) return finishStroke(e);
-  if (erasing) return endErase(e);
+  if (erasing.value) return endErase(e);
   if (!pan) return;
   boardEl.value.releasePointerCapture(e.pointerId);
   pan = null;
@@ -448,9 +551,12 @@ function onMiniUp(e) {
       ref="boardEl"
       class="board"
       :class="[`tool-${tool}`, { panning }]"
+      :style="boardCursor ? { cursor: boardCursor } : {}"
       @pointerdown="onBoardDown"
       @pointermove="onBoardMove"
       @pointerup="onBoardUp"
+      @pointerenter="cursorHover = true"
+      @pointerleave="cursorHover = false"
       @scroll="syncView"
     >
       <!-- Scaler sizes the scroll area; the frame scales its content. -->
@@ -463,12 +569,12 @@ function onMiniUp(e) {
           <!-- Drawing layer — sits behind the notes. -->
           <svg class="strokes" :width="FRAME_W" :height="FRAME_H">
             <path
-              v-for="s in strokes"
-              :key="s.id"
-              :d="pointsToPath(s.points)"
-              :stroke="s.color"
-              :stroke-width="s.width"
-              :opacity="strokeOpacity(s.tool)"
+              v-for="r in renderStrokes"
+              :key="r.key"
+              :d="r.d"
+              :stroke="r.color"
+              :stroke-width="r.width"
+              :opacity="r.opacity"
             />
             <path
               v-if="drawing"
@@ -519,6 +625,18 @@ function onMiniUp(e) {
     <p v-if="!loading && !notes.length" class="board-empty text-muted">
       The board is empty — add a note from the toolbar below.
     </p>
+
+    <!-- Eraser size indicator — a circle that follows the cursor. -->
+    <div
+      v-if="tool === 'eraser' && cursorHover"
+      class="eraser-cursor"
+      :style="{
+        left: `${cursorPos.x}px`,
+        top: `${cursorPos.y}px`,
+        width: `${eraserSize * 2 * zoom}px`,
+        height: `${eraserSize * 2 * zoom}px`,
+      }"
+    />
 
     <!-- Minimap (top-right, below the theme toggle) -->
     <div class="minimap" :class="{ 'minimap--closed': !miniOpen }">
@@ -747,6 +865,16 @@ function onMiniUp(e) {
   transform: translate(-50%, -50%);
   z-index: 4;
   pointer-events: none;
+}
+/* Eraser size indicator. */
+.eraser-cursor {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border: 1.5px solid var(--color-text-muted);
+  background: rgba(127, 127, 127, 0.14);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 25;
 }
 
 /* ---- Minimap ---- */

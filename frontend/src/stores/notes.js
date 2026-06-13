@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia';
+import { defineStore, acceptHMRUpdate } from 'pinia';
 import * as api from '@/api/notes.js';
 import * as connectionApi from '@/api/connections.js';
 import * as strokeApi from '@/api/strokes.js';
@@ -291,5 +291,40 @@ export const useNotesStore = defineStore('notes', {
         this.error = err.message;
       }
     },
+
+    // Partial erase. The caller passes the already-computed final stroke list
+    // (`next`, with temp-id fragments), the original ids to remove, and the temp
+    // fragments to persist. `next` is committed synchronously (no flash); the
+    // backend delete/create runs after and swaps temp ids for real ones.
+    async commitErase(next, originalIds, tempPieces) {
+      this.strokes = next; // definitive local result, applied immediately
+      const created = [];
+      try {
+        for (const id of originalIds) await strokeApi.deleteStroke(id);
+        for (const { tempId, piece } of tempPieces) {
+          const stroke = await strokeApi.createStroke({ sheetId: this.sheetId, ...piece });
+          const i = this.strokes.findIndex((s) => s.id === tempId);
+          if (i !== -1) this.strokes[i] = stroke;
+          created.push(stroke.id);
+        }
+        this.record({
+          undo: async () => {
+            for (const id of created) await this._deleteStroke(id);
+            for (const id of originalIds) await this._restoreStroke(id);
+          },
+          redo: async () => {
+            for (const id of originalIds) await this._deleteStroke(id);
+            for (const id of created) await this._restoreStroke(id);
+          },
+        });
+      } catch (err) {
+        this.error = err.message;
+      }
+    },
   },
 });
+
+// Keep the running store in sync when this module is hot-reloaded in dev.
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useNotesStore, import.meta.hot));
+}
