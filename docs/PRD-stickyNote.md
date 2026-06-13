@@ -146,10 +146,10 @@ A sidebar tool that combines image files into a single PDF. Client-side only.
 
 | FR | Requirement | Status |
 | --- | --- | --- |
-| FR-SCAN-001 | Sidebar "Scan to PDF" entry opens the tool at `/tools/scan-pdf`. | 🟡 |
-| FR-SCAN-002 | Select (click or drag & drop) multiple image files, with thumbnails; add/remove. | 🟡 |
-| FR-SCAN-003 | Reorder images before exporting. | 🟡 |
-| FR-SCAN-004 | Export one PDF — each image centred and fit onto an A4 page (`pdf-lib`). | 🟡 |
+| FR-SCAN-001 | Sidebar "Scan to PDF" entry opens the tool at `/tools/scan-pdf`. | ✅ |
+| FR-SCAN-002 | Select (click or drag & drop) multiple image files (incl. HEIC/iOS), with thumbnails; add/remove. | ✅ |
+| FR-SCAN-003 | Reorder images before exporting. | ✅ |
+| FR-SCAN-004 | Export one PDF — each image centred and fit onto an A4 page (`pdf-lib`). | ✅ |
 
 ### 3.13 Planned (not started)
 

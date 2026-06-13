@@ -8,7 +8,7 @@ Vue Router, HTTP via axios.
 ```
 main.js              app bootstrap (Pinia + Router + global CSS)
 App.vue              shell: sidebar (brand + nav) + theme toggle + <RouterView>
-router/index.js      routes: '/' sheets, '/sheet/:id' board, '/tools/merge-pdf'
+router/index.js      routes: '/' sheets, '/sheet/:id' board, '/tools/{merge,scan}-pdf'
 api/                 axios client + endpoint wrappers (http, sheets, notes, connections, strokes)
 stores/sheets.js     Pinia store — sheet list + current sheet
 stores/notes.js      Pinia store — notes, connections, strokes, undo/redo (per sheet)
@@ -73,6 +73,8 @@ page shape: title top-left, working component centred.
 
 - `views/MergePdfView.vue` — merge several PDFs into one, entirely in the
   browser (`pdf-lib`); supports click-to-pick and drag & drop.
+- `views/ScanPdfView.vue` — combine images into one A4 PDF (`pdf-lib`); HEIC/HEIF
+  (iOS) is decoded to JPEG via a lazy-loaded `heic2any`.
 
 ## Build scripts
 
