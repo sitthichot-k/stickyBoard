@@ -20,8 +20,9 @@ touch Mongoose directly; they call services.
 
 - `server.js` — entry point: connects the DB, starts the HTTP server, handles
   graceful shutdown (SIGINT/SIGTERM).
-- `app.js` — assembles the Express app: CORS, JSON body parsing, mounts `/api`
-  routes, then the 404 + error middleware (registered last).
+- `app.js` — assembles the Express app: a request logger, CORS, JSON body
+  parsing, mounts the API under `/api/v1`, then the 404 + error middleware
+  (registered last).
 - `config/env.js` — single source of config, read from environment with sane
   defaults. Exposes `env` and `isProduction`.
 - `config/db.js` — `connectDatabase()` / `disconnectDatabase()`.
@@ -55,11 +56,15 @@ Both notes and connections expose a `restore` operation (clears `deletedAt`)
 that powers frontend undo. See
 [../skill/soft-delete-and-restore.md](../skill/soft-delete-and-restore.md).
 
-## Error handling
+## Logging & error handling
+
+`middleware/logger.js` logs one line per request on `res.finish` with a business
+code (HTTP status × 100, e.g. `20000`/`40400`) — invaluable for spotting what
+failed and where during development.
 
 `middleware/errorHandler.js` provides `notFound` (404 JSON) and `errorHandler`
-(central handler — keeps all 4 args so Express recognises it). Stack traces are
-included only when not in production.
+(central handler — keeps all 4 args so Express recognises it). Both include the
+business `code` in the JSON body; stack traces are added only outside production.
 
 ## Scripts
 
