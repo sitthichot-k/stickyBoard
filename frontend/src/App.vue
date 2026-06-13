@@ -17,7 +17,11 @@ function toggleTheme() {
     <aside class="sidebar">
       <RouterLink to="/" class="sidebar__brand">📌 Sticky Board</RouterLink>
       <nav class="sidebar__nav">
+        <span class="sidebar__group">Boards</span>
         <RouterLink to="/">🗒️ Board</RouterLink>
+
+        <span class="sidebar__group">Tools</span>
+        <RouterLink to="/tools/merge-pdf">📄 Merge PDF</RouterLink>
       </nav>
       <div class="sidebar__foot text-muted">v1.0</div>
     </aside>
@@ -66,7 +70,19 @@ function toggleTheme() {
 .sidebar__nav {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1);
+}
+.sidebar__group {
+  margin-top: var(--space-3);
+  padding: 0 var(--space-3);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.sidebar__group:first-child {
+  margin-top: 0;
 }
 .sidebar__nav a {
   color: var(--color-text-muted);

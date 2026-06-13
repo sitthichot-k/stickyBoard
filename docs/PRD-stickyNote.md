@@ -128,11 +128,22 @@ Freehand drawing on the sheet, alongside notes and arrows.
 | FR-INFRA-001 | API is versioned under `/api/v1`. | ✅ |
 | FR-INFRA-002 | Every request is logged with a business code (HTTP × 100); error responses include that `code`. | ✅ |
 
-### 3.11 Planned (not started)
+### 3.11 Merge PDF — `Feature: Merge PDF`
+
+A sidebar tool that combines several PDFs into one. Client-side only (no upload,
+no backend); no watermark while in development.
 
 | FR | Requirement | Status |
 | --- | --- | --- |
-| FR-PDF-001 | Merge PDF tool (combine PDFs, client-side). | ⬜ |
+| FR-PDF-001 | Sidebar "Merge PDF" entry opens the tool at `/tools/merge-pdf`. | 🟡 |
+| FR-PDF-002 | Select multiple PDF files (add more, remove individual ones). | 🟡 |
+| FR-PDF-003 | Reorder the files before merging. | 🟡 |
+| FR-PDF-004 | Merge into a single PDF and download it (client-side via `pdf-lib`). | 🟡 |
+
+### 3.12 Planned (not started)
+
+| FR | Requirement | Status |
+| --- | --- | --- |
 | FR-SCAN-001 | Scan to PDF tool (images → one PDF, client-side). | ⬜ |
 | FR-ADMIN-001 | Auth + roles and an admin menu. | ⬜ |
 | FR-DASH-001 | Admin dashboard visualising insights. | ⬜ |
