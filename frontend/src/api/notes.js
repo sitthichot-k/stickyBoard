@@ -1,7 +1,7 @@
 import http from './http.js';
 
-export function fetchNotes() {
-  return http.get('/notes').then((res) => res.data);
+export function fetchNotes(sheetId) {
+  return http.get('/notes', { params: sheetId ? { sheetId } : {} }).then((res) => res.data);
 }
 
 export function createNote(payload) {

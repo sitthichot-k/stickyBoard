@@ -1,7 +1,7 @@
 import http from './http.js';
 
-export function fetchConnections() {
-  return http.get('/connections').then((res) => res.data);
+export function fetchConnections(sheetId) {
+  return http.get('/connections', { params: sheetId ? { sheetId } : {} }).then((res) => res.data);
 }
 
 export function createConnection(payload) {

@@ -17,6 +17,7 @@ function snapshot(note) {
 
 export const useNotesStore = defineStore('notes', {
   state: () => ({
+    sheetId: null, // the sheet these notes belong to
     notes: [],
     connections: [],
     loading: false,
@@ -31,13 +32,14 @@ export const useNotesStore = defineStore('notes', {
     canRedo: (state) => state.redoStack.length > 0,
   },
   actions: {
-    async load() {
+    async load(sheetId) {
+      this.sheetId = sheetId ?? null;
       this.loading = true;
       this.error = '';
       try {
         const [notes, connections] = await Promise.all([
-          api.fetchNotes(),
-          connectionApi.fetchConnections(),
+          api.fetchNotes(sheetId),
+          connectionApi.fetchConnections(sheetId),
         ]);
         this.notes = notes;
         this.connections = connections;
@@ -85,6 +87,7 @@ export const useNotesStore = defineStore('notes', {
       const offset = (this.notes.length % 6) * 28;
       const at = position ?? { x: 80 + offset, y: 80 + offset };
       const note = await api.createNote({
+        sheetId: this.sheetId,
         content: '',
         x: Math.round(at.x),
         y: Math.round(at.y),
@@ -202,7 +205,13 @@ export const useNotesStore = defineStore('notes', {
       );
       if (exists) return;
       try {
-        const connection = await connectionApi.createConnection({ from, to, fromSide, toSide });
+        const connection = await connectionApi.createConnection({
+          sheetId: this.sheetId,
+          from,
+          to,
+          fromSide,
+          toSide,
+        });
         this.connections.push(connection);
         this.record({
           undo: () => this._deleteConnection(connection.id),

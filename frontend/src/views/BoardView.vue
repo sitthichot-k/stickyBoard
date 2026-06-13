@@ -1,14 +1,28 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useNotesStore } from '@/stores/notes.js';
+import { useSheetsStore } from '@/stores/sheets.js';
 import StickyNote from '@/components/StickyNote.vue';
 import BaseAlert from '@/components/ui/BaseAlert.vue';
 
+const route = useRoute();
+const router = useRouter();
 const store = useNotesStore();
+const sheets = useSheetsStore();
 const { notes, connections, loading, error, colors, canUndo, canRedo } = storeToRefs(store);
+const { current: sheet } = storeToRefs(sheets);
 
-onMounted(store.load);
+// Background style for the current sheet (defaults to dots).
+const bgClass = computed(() => `bg-${sheet.value?.background || 'dots'}`);
+
+onMounted(async () => {
+  const sheetId = route.params.id;
+  const found = await sheets.open(sheetId); // load sheet meta (name, background)
+  if (!found) return router.replace('/'); // unknown sheet → back to the list
+  store.load(sheetId);
+});
 
 const NOTE_HALF = 110; // half of the default 220px note — used to center new notes
 
@@ -244,7 +258,11 @@ const pendingPath = computed(() => {
       {{ error }} — is the backend running & seeded? (<code>npm run seed</code>)
     </BaseAlert>
 
-    <div class="board-info text-muted">{{ notes.length }} notes</div>
+    <div class="board-info">
+      <RouterLink to="/" class="board-info__back" title="Back to sheets">←</RouterLink>
+      <strong>{{ sheet?.name || 'Board' }}</strong>
+      <span class="text-muted"> · {{ notes.length }} notes</span>
+    </div>
 
     <div
       ref="boardEl"
@@ -259,7 +277,7 @@ const pendingPath = computed(() => {
       </p>
 
       <!-- Wide frame you pan across; notes are positioned within it. -->
-      <div class="board-frame">
+      <div class="board-frame" :class="bgClass">
         <svg class="links" width="4000" height="3000">
           <defs>
             <marker
@@ -367,8 +385,21 @@ const pendingPath = computed(() => {
   top: var(--space-4);
   left: var(--space-4);
   z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
   font-size: var(--font-size-sm);
-  font-weight: 600;
+}
+.board-info__back {
+  font-size: 1.1rem;
+  color: var(--color-primary);
+  text-decoration: none;
+  line-height: 1;
 }
 .board {
   position: absolute;
@@ -397,8 +428,7 @@ const pendingPath = computed(() => {
   position: relative;
   width: 4000px;
   height: 3000px;
-  background-image: radial-gradient(var(--color-border) 1px, transparent 1px);
-  background-size: 24px 24px;
+  /* background pattern comes from a bg-dots|bg-grid|bg-blank class (per sheet) */
 }
 /* Arrow layer — sits above the notes so arrows are never hidden; the SVG
    itself ignores pointer events, only the arrow hit-paths are interactive. */
