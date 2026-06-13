@@ -29,7 +29,7 @@ small, reviewable, and safe.
 ## Prompt Template (Reusable)
 
 ```txt
-อ้างอิง PRD: /Users/git-mfu/stack/template/docs/PRD-IAM-Enterprise.md
+อ้างอิง PRD: docs/PRD-stickyNote.md
 Feature: [ชื่อโมดูล]
 FR: [FR-NEW-001, FR-NEW-002]
 

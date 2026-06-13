@@ -5,6 +5,8 @@ Developer documentation for **Sticky Board** — a sticky-notes whiteboard
 
 ## Map
 
+Start with the [PRD](PRD-stickyNote.md) for product requirements and `FR` ids.
+
 | Folder | What's inside |
 | --- | --- |
 | [architecture/](architecture/) | How the system is built — stack, layers, data model, REST API. |
