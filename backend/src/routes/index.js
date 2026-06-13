@@ -5,7 +5,8 @@ import sheetRoutes from './sheet.routes.js';
 import noteRoutes from './note.routes.js';
 import connectionRoutes from './connection.routes.js';
 import strokeRoutes from './stroke.routes.js';
-import { requireAuth } from '../middleware/auth.js';
+import adminRoutes from './admin.routes.js';
+import { requireAuth, requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -18,5 +19,8 @@ router.use('/sheets', requireAuth, sheetRoutes);
 router.use('/notes', requireAuth, noteRoutes);
 router.use('/connections', requireAuth, connectionRoutes);
 router.use('/strokes', requireAuth, strokeRoutes);
+
+// Admin-only.
+router.use('/admin', requireAuth, requireAdmin, adminRoutes);
 
 export default router;

@@ -164,11 +164,20 @@ admin (or seeded). Roles: `user` and `admin`.
 | FR-AUTH-004 | Frontend requires login for the whole app (route guard → `/login`); logout clears the session. | ✅ |
 | FR-AUTH-005 | No public registration — users are seeded or created by an admin. | ✅ |
 
-### 3.14 Planned (not started)
+### 3.14 Admin — `Feature: Admin`
+
+Admin-only user management (replaces public registration).
 
 | FR | Requirement | Status |
 | --- | --- | --- |
-| FR-ADMIN-001 | Admin can manage users (list, create, set role, remove) + an Admin sidebar menu. | ⬜ |
+| FR-ADMIN-001 | Admin-only endpoints: list / create / set-role / delete users (can't affect own account). | 🟡 |
+| FR-ADMIN-002 | An Admin sidebar group, visible only to admins. | ⬜ |
+| FR-ADMIN-003 | Users page: list, create, change role, and remove users. | ⬜ |
+
+### 3.15 Planned (not started)
+
+| FR | Requirement | Status |
+| --- | --- | --- |
 | FR-DASH-001 | Admin dashboard visualising insights. | ⬜ |
 
 > Build order: PDF tools (FR-PDF / FR-SCAN) first, then auth-gated admin
