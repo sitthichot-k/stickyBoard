@@ -2,10 +2,10 @@
 import { computed, onMounted, onUnmounted, nextTick, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
-import { useNotesStore } from '@/stores/notes.js';
-import { useSheetsStore } from '@/stores/sheets.js';
-import StickyNote from '@/components/StickyNote.vue';
-import BaseAlert from '@/components/ui/BaseAlert.vue';
+import { useNotesStore } from '@/modules/board/stores/notes.js';
+import { useSheetsStore } from '@/modules/board/stores/sheets.js';
+import StickyNote from '@/modules/board/components/StickyNote.vue';
+import BaseAlert from '@/components/BaseAlert.vue';
 
 const route = useRoute();
 const router = useRouter();

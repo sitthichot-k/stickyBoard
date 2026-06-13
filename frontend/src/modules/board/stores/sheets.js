@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import * as api from '@/api/sheets.js';
+import * as api from '@/modules/board/api/sheets.js';
 
 export const useSheetsStore = defineStore('sheets', {
   state: () => ({

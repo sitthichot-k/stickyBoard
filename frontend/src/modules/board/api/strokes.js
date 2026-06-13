@@ -1,4 +1,4 @@
-import http from './http.js';
+import http from '@/helpers/http.js';
 
 export function fetchStrokes(sheetId) {
   return http.get('/strokes', { params: sheetId ? { sheetId } : {} }).then((res) => res.data);

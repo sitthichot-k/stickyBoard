@@ -1,4 +1,4 @@
-import http from './http.js';
+import http from '@/helpers/http.js';
 
 export function fetchSheets() {
   return http.get('/sheets').then((res) => res.data);

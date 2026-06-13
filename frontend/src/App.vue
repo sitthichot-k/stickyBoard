@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth.js';
+import { useAuthStore } from '@/modules/auth/stores/auth.js';
 
 // Restore the saved theme (defaults to light) and apply it before paint.
 const theme = ref(localStorage.getItem('theme') || 'light');

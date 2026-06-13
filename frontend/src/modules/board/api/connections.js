@@ -1,4 +1,4 @@
-import http from './http.js';
+import http from '@/helpers/http.js';
 
 export function fetchConnections(sheetId) {
   return http.get('/connections', { params: sheetId ? { sheetId } : {} }).then((res) => res.data);

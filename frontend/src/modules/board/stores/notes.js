@@ -1,7 +1,7 @@
 import { defineStore, acceptHMRUpdate } from 'pinia';
-import * as api from '@/api/notes.js';
-import * as connectionApi from '@/api/connections.js';
-import * as strokeApi from '@/api/strokes.js';
+import * as api from '@/modules/board/api/notes.js';
+import * as connectionApi from '@/modules/board/api/connections.js';
+import * as strokeApi from '@/modules/board/api/strokes.js';
 
 const COLORS = ['#fff9c4', '#c8e6c9', '#ffccbc', '#bbdefb', '#e1bee7', '#f8bbd0', '#ffffff'];
 

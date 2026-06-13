@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import * as api from '@/api/admin.js';
-import BaseAlert from '@/components/ui/BaseAlert.vue';
+import * as api from '@/modules/admin/api/admin.js';
+import BaseAlert from '@/components/BaseAlert.vue';
 
 const stats = ref(null);
 const loading = ref(false);

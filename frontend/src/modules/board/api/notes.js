@@ -1,4 +1,4 @@
-import http from './http.js';
+import http from '@/helpers/http.js';
 
 export function fetchNotes(sheetId) {
   return http.get('/notes', { params: sheetId ? { sheetId } : {} }).then((res) => res.data);

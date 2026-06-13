@@ -1,43 +1,43 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { useAuthStore } from '@/stores/auth.js';
+import { useAuthStore } from '@/modules/auth/stores/auth.js';
 
 const routes = [
   {
     path: '/login',
     name: 'login',
-    component: () => import('@/views/LoginView.vue'),
+    component: () => import('@/modules/auth/views/LoginView.vue'),
     meta: { public: true },
   },
   {
     path: '/',
     name: 'sheets',
-    component: () => import('@/views/SheetsView.vue'),
+    component: () => import('@/modules/board/views/SheetsView.vue'),
   },
   {
     path: '/sheet/:id',
     name: 'board',
-    component: () => import('@/views/BoardView.vue'),
+    component: () => import('@/modules/board/views/BoardView.vue'),
   },
   {
     path: '/tools/merge-pdf',
     name: 'merge-pdf',
-    component: () => import('@/views/MergePdfView.vue'),
+    component: () => import('@/modules/tools/views/MergePdfView.vue'),
   },
   {
     path: '/tools/scan-pdf',
     name: 'scan-pdf',
-    component: () => import('@/views/ScanPdfView.vue'),
+    component: () => import('@/modules/tools/views/ScanPdfView.vue'),
   },
   {
     path: '/admin/dashboard',
     name: 'admin-dashboard',
-    component: () => import('@/views/DashboardView.vue'),
+    component: () => import('@/modules/admin/views/DashboardView.vue'),
     meta: { admin: true },
   },
   {
     path: '/admin/users',
     name: 'admin-users',
-    component: () => import('@/views/UsersView.vue'),
+    component: () => import('@/modules/admin/views/UsersView.vue'),
     meta: { admin: true },
   },
 ];

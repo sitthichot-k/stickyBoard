@@ -1,8 +1,8 @@
 <script setup>
 import { ref } from 'vue';
 import { PDFDocument } from 'pdf-lib';
-import BaseButton from '@/components/ui/BaseButton.vue';
-import BaseAlert from '@/components/ui/BaseAlert.vue';
+import BaseButton from '@/components/BaseButton.vue';
+import BaseAlert from '@/components/BaseAlert.vue';
 
 const files = ref([]); // { id, file }
 const busy = ref(false);

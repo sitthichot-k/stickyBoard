@@ -1,8 +1,8 @@
 <script setup>
 import { ref, computed, onBeforeUnmount } from 'vue';
 import { PDFDocument, PageSizes } from 'pdf-lib';
-import BaseButton from '@/components/ui/BaseButton.vue';
-import BaseAlert from '@/components/ui/BaseAlert.vue';
+import BaseButton from '@/components/BaseButton.vue';
+import BaseAlert from '@/components/BaseAlert.vue';
 
 const items = ref([]); // { id, file, url, blob, loading }
 const busy = ref(false);

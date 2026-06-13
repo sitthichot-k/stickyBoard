@@ -1,4 +1,4 @@
-import http from './http.js';
+import http from '@/helpers/http.js';
 
 export function login(email, password) {
   return http.post('/auth/login', { email, password }).then((res) => res.data);

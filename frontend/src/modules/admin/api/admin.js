@@ -1,4 +1,4 @@
-import http from './http.js';
+import http from '@/helpers/http.js';
 
 export function fetchStats() {
   return http.get('/admin/stats').then((res) => res.data);

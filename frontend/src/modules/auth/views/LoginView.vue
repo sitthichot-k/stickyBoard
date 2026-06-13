@@ -1,9 +1,9 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { useAuthStore } from '@/stores/auth.js';
-import BaseButton from '@/components/ui/BaseButton.vue';
-import BaseAlert from '@/components/ui/BaseAlert.vue';
+import { useAuthStore } from '@/modules/auth/stores/auth.js';
+import BaseButton from '@/components/BaseButton.vue';
+import BaseAlert from '@/components/BaseAlert.vue';
 
 const router = useRouter();
 const route = useRoute();

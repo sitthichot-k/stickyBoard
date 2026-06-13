@@ -1,9 +1,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import * as api from '@/api/admin.js';
-import { useAuthStore } from '@/stores/auth.js';
-import BaseButton from '@/components/ui/BaseButton.vue';
-import BaseAlert from '@/components/ui/BaseAlert.vue';
+import * as api from '@/modules/admin/api/admin.js';
+import { useAuthStore } from '@/modules/auth/stores/auth.js';
+import BaseButton from '@/components/BaseButton.vue';
+import BaseAlert from '@/components/BaseAlert.vue';
 
 const auth = useAuthStore();
 const users = ref([]);

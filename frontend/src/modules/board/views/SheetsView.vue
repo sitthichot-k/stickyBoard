@@ -2,9 +2,9 @@
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
-import { useSheetsStore } from '@/stores/sheets.js';
-import BaseButton from '@/components/ui/BaseButton.vue';
-import BaseAlert from '@/components/ui/BaseAlert.vue';
+import { useSheetsStore } from '@/modules/board/stores/sheets.js';
+import BaseButton from '@/components/BaseButton.vue';
+import BaseAlert from '@/components/BaseAlert.vue';
 
 const router = useRouter();
 const store = useSheetsStore();
