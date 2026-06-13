@@ -8,12 +8,13 @@ Vue Router, HTTP via axios.
 ```
 main.js              app bootstrap (Pinia + Router + global CSS)
 App.vue              shell: sidebar (brand + nav) + theme toggle + <RouterView>
-router/index.js      routes: '/' sheets list, '/sheet/:id' board
-api/                 axios client + endpoint wrappers (http, sheets, notes, connections)
+router/index.js      routes: '/' sheets, '/sheet/:id' board, '/tools/merge-pdf'
+api/                 axios client + endpoint wrappers (http, sheets, notes, connections, strokes)
 stores/sheets.js     Pinia store — sheet list + current sheet
 stores/notes.js      Pinia store — notes, connections, strokes, undo/redo (per sheet)
 views/SheetsView.vue landing: list sheets + create (name + background)
 views/BoardView.vue  the canvas: pan, tools, arrows, toolbox (per sheet)
+views/MergePdfView.vue  tool: merge PDFs in-browser (pdf-lib)
 components/
   StickyNote.vue     a single note: drag, edit, resize, recolor, link anchors
   ui/                BaseButton, BaseAlert
@@ -60,9 +61,18 @@ Single Pinia store owns `notes`, `connections`, and the undo/redo stacks.
 
 ## API client (`api/`)
 
-- `http.js` — axios instance (`baseURL` from `VITE_API_URL`, default `/api`) with
-  a response interceptor that normalises error messages.
-- `notes.js`, `connections.js` — one function per endpoint.
+- `http.js` — axios instance (`baseURL` from `VITE_API_URL`, default `/api/v1`)
+  with a response interceptor that normalises error messages.
+- `sheets.js`, `notes.js`, `connections.js`, `strokes.js` — one function per endpoint.
+
+## Tools (standalone pages)
+
+Client-side utilities that don't touch the board data model live under
+`/tools/*` and appear in the sidebar's **Tools** group. They keep the shared
+page shape: title top-left, working component centred.
+
+- `views/MergePdfView.vue` — merge several PDFs into one, entirely in the
+  browser (`pdf-lib`); supports click-to-pick and drag & drop.
 
 ## Build scripts
 

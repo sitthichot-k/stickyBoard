@@ -135,10 +135,10 @@ no backend); no watermark while in development.
 
 | FR | Requirement | Status |
 | --- | --- | --- |
-| FR-PDF-001 | Sidebar "Merge PDF" entry opens the tool at `/tools/merge-pdf`. | 🟡 |
-| FR-PDF-002 | Select multiple PDF files (add more, remove individual ones). | 🟡 |
-| FR-PDF-003 | Reorder the files before merging. | 🟡 |
-| FR-PDF-004 | Merge into a single PDF and download it (client-side via `pdf-lib`). | 🟡 |
+| FR-PDF-001 | Sidebar "Merge PDF" entry opens the tool at `/tools/merge-pdf`. | ✅ |
+| FR-PDF-002 | Select (click or drag & drop) multiple PDF files; add more, remove individual ones. | ✅ |
+| FR-PDF-003 | Reorder the files before merging. | ✅ |
+| FR-PDF-004 | Merge into a single PDF and download it (client-side via `pdf-lib`). | ✅ |
 
 ### 3.12 Planned (not started)
 
