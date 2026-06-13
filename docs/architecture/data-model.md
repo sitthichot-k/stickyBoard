@@ -1,11 +1,11 @@
 # Data Model
 
-Three MongoDB collections: `sheets`, `notes`, and `connections`. All use Mongoose
-`timestamps` and a `toJSON` transform that exposes `id` (instead of `_id`),
-drops `__v`, and hides `deletedAt`.
+Four MongoDB collections: `sheets`, `notes`, `connections`, and `strokes`. All
+use Mongoose `timestamps` and a `toJSON` transform that exposes `id` (instead of
+`_id`), drops `__v`, and hides `deletedAt`.
 
-A **sheet** is a board that owns its notes and arrows. Every note/connection
-references its sheet via `sheetId`.
+A **sheet** is a board that owns its notes, arrows, and drawings. Every
+note/connection/stroke references its sheet via `sheetId`.
 
 ## Sheet
 
@@ -50,10 +50,24 @@ Writable fields from the client are whitelisted in the note controller
 | `deletedAt` | Date | `null` | soft-delete marker |
 | `createdAt` / `updatedAt` | Date | — | from `timestamps` |
 
+## Stroke
+
+`backend/src/models/stroke.model.js` — a freehand drawing on a sheet.
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `sheetId` | ObjectId (ref Sheet) | — | required — the owning sheet |
+| `tool` | enum pencil/pen/brush | `pen` | drawing style (width/opacity) |
+| `color` | String | `#1f2937` | stroke colour |
+| `width` | Number | 3 | stroke thickness (px), min 1 |
+| `points` | [Number] | `[]` | flat path `[x0,y0,x1,y1,…]` in frame space |
+| `deletedAt` | Date | `null` | soft-delete marker |
+| `createdAt` / `updatedAt` | Date | — | from `timestamps` |
+
 ## Soft delete
 
 Nothing is hard-deleted in normal operation. `delete` stamps `deletedAt`; all
 reads filter `{ deletedAt: null }`. This makes **undo** trivial (clear the
 marker, same id — no id remapping). Cascades: removing a note soft-deletes its
-connections; removing a sheet soft-deletes its notes and connections. Details:
+connections; removing a sheet soft-deletes its notes, connections, and strokes. Details:
 [../skill/soft-delete-and-restore.md](../skill/soft-delete-and-restore.md).

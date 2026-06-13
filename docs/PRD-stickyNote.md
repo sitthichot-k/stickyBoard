@@ -105,11 +105,12 @@ Freehand drawing on the sheet, alongside notes and arrows.
 
 | FR | Requirement | Status |
 | --- | --- | --- |
-| FR-NEW-005a | A `draw` tool with three styles — pencil, pen, brush (differing width/opacity). | 🟡 (backend done) |
-| FR-NEW-005b | Drag on the canvas to draw a freehand stroke; strokes persist per sheet. | 🟡 (backend done) |
-| FR-NEW-005c | Strokes are scoped to a sheet and removed when the sheet is deleted. | ✅ (backend) |
-| FR-NEW-005d | Drawing participates in undo/redo. | ⬜ (frontend) |
-| FR-NEW-006 | Tooltips on every toolbox icon. | ⬜ (frontend) |
+| FR-NEW-005a | A `draw` tool with three styles — pencil, pen, brush (differing width/opacity). | ✅ |
+| FR-NEW-005b | Drag on the canvas to draw a freehand stroke; strokes persist per sheet. | ✅ |
+| FR-NEW-005c | Strokes are scoped to a sheet and removed when the sheet is deleted. | ✅ |
+| FR-NEW-005d | Drawing participates in undo/redo. | ✅ |
+| FR-NEW-005e | Adjustable stroke thickness (slider) and an eraser tool (small/medium/large). | ✅ |
+| FR-NEW-006 | Tooltips on every toolbox icon. | ✅ |
 
 ### 3.9 Board navigation — `Feature: Board nav`
 

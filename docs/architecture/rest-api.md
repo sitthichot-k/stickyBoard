@@ -53,6 +53,21 @@ Notes on `POST /api/connections`:
 - `from === to` is allowed (self-loop).
 - `fromSide` / `toSide` are one of `top|bottom|left|right` (default `right`/`left`).
 
+## Strokes
+
+Freehand drawings on a sheet.
+
+| Method | Path | Description |
+| --- | --- | --- |
+| GET | `/api/strokes?sheetId=:id` | list a sheet's active strokes (oldest first) |
+| POST | `/api/strokes` | create a stroke — body `{ sheetId, points, tool?, color?, width? }` |
+| DELETE | `/api/strokes/:id` | soft-delete the stroke → `204` |
+| POST | `/api/strokes/:id/restore` | undo a delete → the stroke |
+
+Notes on `POST /api/strokes`:
+- `sheetId` is required; `points` must be a flat array `[x0,y0,x1,y1,…]` with at least 2 coordinates.
+- `tool` is one of `pencil|pen|brush` (default `pen`); `color`/`width` optional.
+
 ## Errors
 
 Errors return `{ error: "<message>" }` with an appropriate status

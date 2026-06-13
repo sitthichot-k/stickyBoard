@@ -11,7 +11,7 @@ App.vue              shell: sidebar (brand + nav) + theme toggle + <RouterView>
 router/index.js      routes: '/' sheets list, '/sheet/:id' board
 api/                 axios client + endpoint wrappers (http, sheets, notes, connections)
 stores/sheets.js     Pinia store — sheet list + current sheet
-stores/notes.js      Pinia store — notes, connections, undo/redo (scoped to a sheet)
+stores/notes.js      Pinia store — notes, connections, strokes, undo/redo (per sheet)
 views/SheetsView.vue landing: list sheets + create (name + background)
 views/BoardView.vue  the canvas: pan, tools, arrows, toolbox (per sheet)
 components/
@@ -37,6 +37,11 @@ A wide (4000×3000) pannable frame. A single `tool` state drives interaction:
 | `select` | move / edit / resize / recolor notes (drag empty space pans) |
 | `pan` | drag anywhere to pan; notes ignore pointer events |
 | `connect` | drag from a note's anchor to another note to draw an arrow |
+| `draw` | freehand drawing (pencil/pen/brush, colour, adjustable thickness) |
+| `eraser` | drag over strokes to remove them (small/medium/large) |
+
+Notes, arrows, and strokes are all scoped to the open sheet and persist via the
+store; there's also a collapsible minimap and zoom (30–200%).
 
 Plus an **Add note** action (drops a note at the centre of the current view) and
 **undo/redo** buttons. Arrows are an SVG layer rendered *above* the notes;
