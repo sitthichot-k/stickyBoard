@@ -1,5 +1,7 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth.js';
 
 // Restore the saved theme (defaults to light) and apply it before paint.
 const theme = ref(localStorage.getItem('theme') || 'light');
@@ -10,10 +12,22 @@ function toggleTheme() {
   localStorage.setItem('theme', theme.value);
   document.documentElement.setAttribute('data-theme', theme.value);
 }
+
+const route = useRoute();
+const router = useRouter();
+const auth = useAuthStore();
+
+// Public pages (login) render full-screen without the app shell.
+const showShell = computed(() => !route.meta.public);
+
+function logout() {
+  auth.logout();
+  router.push({ name: 'login' });
+}
 </script>
 
 <template>
-  <div class="app">
+  <div v-if="showShell" class="app">
     <aside class="sidebar">
       <RouterLink to="/" class="sidebar__brand">📌 Sticky Board</RouterLink>
       <nav class="sidebar__nav">
@@ -24,7 +38,14 @@ function toggleTheme() {
         <RouterLink to="/tools/merge-pdf">📄 Merge PDF</RouterLink>
         <RouterLink to="/tools/scan-pdf">🖼️ Scan to PDF</RouterLink>
       </nav>
-      <div class="sidebar__foot text-muted">v1.0</div>
+
+      <div class="sidebar__foot">
+        <div v-if="auth.user" class="sidebar__user">
+          <span class="sidebar__user-name">{{ auth.user.name || auth.user.email }}</span>
+          <span class="sidebar__role">{{ auth.user.role }}</span>
+        </div>
+        <button class="sidebar__logout" @click="logout">Sign out</button>
+      </div>
     </aside>
 
     <main class="app__main">
@@ -38,6 +59,8 @@ function toggleTheme() {
       <RouterView />
     </main>
   </div>
+
+  <RouterView v-else />
 </template>
 
 <style scoped>
@@ -97,7 +120,48 @@ function toggleTheme() {
 }
 .sidebar__foot {
   margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.sidebar__user {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
   font-size: var(--font-size-sm);
+}
+.sidebar__user-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.sidebar__role {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+.sidebar__logout {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-align: left;
+}
+.sidebar__logout:hover {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
 }
 @media (prefers-reduced-motion: reduce) {
   .sidebar__brand {
