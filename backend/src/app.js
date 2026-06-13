@@ -2,16 +2,22 @@ import express from 'express';
 import cors from 'cors';
 import routes from './routes/index.js';
 import { env } from './config/env.js';
+import { requestLogger } from './middleware/logger.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
+
+// Log every request (with a business code) as soon as possible.
+app.use(requestLogger);
 
 // Core middleware
 app.use(cors({ origin: env.corsOrigin }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// API routes
+// API routes — versioned under /api/v1.
+app.use('/api/v1', routes);
+// Legacy unversioned alias — temporary, until the frontend moves to /api/v1.
 app.use('/api', routes);
 
 // 404 + error handling (must be registered last)
