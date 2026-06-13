@@ -22,4 +22,4 @@ RUN npm ci --omit=dev
 COPY src ./src
 EXPOSE ${BACKEND_PORT}
 USER node
-CMD ["node", "src/server.js"]
+CMD ["node", "src/routes/server.js"]

@@ -44,7 +44,7 @@ services:
       SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@example.com}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-admin1234}
     # nodemon with -L (legacy/polling watch) — required for Windows bind mounts.
-    command: ["npx", "nodemon", "-L", "src/server.js"]
+    command: ["npx", "nodemon", "-L", "src/routes/server.js"]
     volumes:
       - ./backend/src:/app/src
     depends_on:
