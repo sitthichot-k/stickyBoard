@@ -5,12 +5,26 @@
  * Run with: npm run seed
  */
 import { connectDatabase, disconnectDatabase } from './config/db.js';
+import { env } from './config/env.js';
 import { Sheet } from './models/sheet.model.js';
 import { Note } from './models/note.model.js';
 import { Connection } from './models/connection.model.js';
+import { User } from './models/user.model.js';
+import { createUser } from './services/user.service.js';
 
 async function seed() {
   await connectDatabase();
+
+  // Users — seed an admin + a regular user (login-only: no public sign-up).
+  await User.deleteMany({});
+  await createUser({
+    email: env.seedAdmin.email,
+    password: env.seedAdmin.password,
+    name: 'Admin',
+    role: 'admin',
+  });
+  await createUser({ email: 'user@example.com', password: 'user1234', name: 'User', role: 'user' });
+  console.log(`[seed] admin: ${env.seedAdmin.email} / ${env.seedAdmin.password}`);
 
   await Promise.all([Sheet.deleteMany({}), Note.deleteMany({}), Connection.deleteMany({})]);
 

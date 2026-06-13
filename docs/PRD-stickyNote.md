@@ -151,11 +151,24 @@ A sidebar tool that combines image files into a single PDF. Client-side only.
 | FR-SCAN-003 | Reorder images before exporting. | ✅ |
 | FR-SCAN-004 | Export one PDF — each image centred and fit onto an A4 page (`pdf-lib`). | ✅ |
 
-### 3.13 Planned (not started)
+### 3.13 Auth — `Feature: Auth`
+
+The whole app requires login. No public registration — users are created by an
+admin (or seeded). Roles: `user` and `admin`.
 
 | FR | Requirement | Status |
 | --- | --- | --- |
-| FR-ADMIN-001 | Auth + roles and an admin menu. | ⬜ |
+| FR-AUTH-001 | User model: email, hashed password, name, role (`user`/`admin`). | 🟡 |
+| FR-AUTH-002 | `POST /auth/login` returns a JWT + user; `GET /auth/me` returns the current user. | 🟡 |
+| FR-AUTH-003 | Data endpoints require a valid token; admin endpoints require the `admin` role. | 🟡 |
+| FR-AUTH-004 | Frontend requires login for the whole app (route guard → `/login`); logout clears the session. | ⬜ |
+| FR-AUTH-005 | No public registration — users are seeded or created by an admin. | 🟡 |
+
+### 3.14 Planned (not started)
+
+| FR | Requirement | Status |
+| --- | --- | --- |
+| FR-ADMIN-001 | Admin can manage users (list, create, set role, remove) + an Admin sidebar menu. | ⬜ |
 | FR-DASH-001 | Admin dashboard visualising insights. | ⬜ |
 
 > Build order: PDF tools (FR-PDF / FR-SCAN) first, then auth-gated admin

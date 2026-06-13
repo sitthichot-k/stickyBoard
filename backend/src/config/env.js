@@ -9,6 +9,15 @@ export const env = {
   db: {
     uri: process.env.MONGODB_URI ?? 'mongodb://localhost:27017/stickyBoard',
   },
+  jwt: {
+    secret: process.env.JWT_SECRET ?? 'dev-secret-change-me',
+    expiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
+  },
+  // Seed admin (created by `npm run seed` if no users exist).
+  seedAdmin: {
+    email: process.env.SEED_ADMIN_EMAIL ?? 'admin@example.com',
+    password: process.env.SEED_ADMIN_PASSWORD ?? 'admin1234',
+  },
 };
 
 export const isProduction = env.nodeEnv === 'production';
