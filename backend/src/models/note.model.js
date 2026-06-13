@@ -2,6 +2,8 @@ import mongoose from 'mongoose';
 
 const noteSchema = new mongoose.Schema(
   {
+    // The sheet this note belongs to.
+    sheetId: { type: mongoose.Schema.Types.ObjectId, ref: 'Sheet', required: true, index: true },
     content: { type: String, default: '', trim: true, maxlength: 2000 },
     // Position on the board (top-left corner, in pixels).
     x: { type: Number, default: 40 },

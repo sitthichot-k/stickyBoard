@@ -3,8 +3,17 @@ import { createBaseService } from './base.service.js';
 
 const base = createBaseService(Note);
 
-// The board shows every (non-deleted) note at once, so no pagination here — just ordered by stack.
-export const listNotes = () => Note.find({ deletedAt: null }).sort({ z: 1, createdAt: 1 });
+// Every (non-deleted) note on a sheet, ordered by stack. If no sheetId is given,
+// returns all notes (back-compat until the frontend always scopes by sheet).
+export const listNotes = (sheetId) => {
+  const filter = { deletedAt: null };
+  if (sheetId) filter.sheetId = sheetId;
+  return Note.find(filter).sort({ z: 1, createdAt: 1 });
+};
+
+// Cascade: soft-delete every note on a sheet (used when the sheet is removed).
+export const deleteNotesForSheet = (sheetId) =>
+  Note.updateMany({ deletedAt: null, sheetId }, { deletedAt: new Date() });
 
 export const getNote = (id) => base.searchOne(id);
 export const createNote = (payload) => base.create(payload);

@@ -12,7 +12,7 @@ function pick(body) {
 
 export async function list(req, res, next) {
   try {
-    res.json(await service.listNotes());
+    res.json(await service.listNotes(req.query.sheetId));
   } catch (err) {
     next(err);
   }
@@ -20,7 +20,9 @@ export async function list(req, res, next) {
 
 export async function create(req, res, next) {
   try {
-    const note = await service.createNote(pick(req.body));
+    const sheetId = req.body?.sheetId;
+    if (!sheetId) return res.status(400).json({ error: 'sheetId is required' });
+    const note = await service.createNote({ ...pick(req.body), sheetId });
     res.status(201).json(note);
   } catch (err) {
     next(err);

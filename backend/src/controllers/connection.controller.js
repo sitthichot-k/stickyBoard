@@ -2,7 +2,7 @@ import * as service from '../services/connection.service.js';
 
 export async function list(req, res, next) {
   try {
-    res.json(await service.listConnections());
+    res.json(await service.listConnections(req.query.sheetId));
   } catch (err) {
     next(err);
   }
@@ -10,10 +10,11 @@ export async function list(req, res, next) {
 
 export async function create(req, res, next) {
   try {
-    const { from, to, fromSide, toSide } = req.body ?? {};
+    const { sheetId, from, to, fromSide, toSide } = req.body ?? {};
+    if (!sheetId) return res.status(400).json({ error: 'sheetId is required' });
     if (!from || !to) return res.status(400).json({ error: 'from and to are required' });
     // Self-loops (from === to) are allowed.
-    const connection = await service.createConnection({ from, to, fromSide, toSide });
+    const connection = await service.createConnection({ sheetId, from, to, fromSide, toSide });
     res.status(201).json(connection);
   } catch (err) {
     next(err);

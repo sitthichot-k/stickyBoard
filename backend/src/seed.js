@@ -1,23 +1,34 @@
 /**
- * Seed script: populates the database with sample sticky notes (board demo)
+ * Seed script: populates the database with sample sheets and notes
  * so the UI has data to show.
  *
  * Run with: npm run seed
  */
 import { connectDatabase, disconnectDatabase } from './config/db.js';
+import { Sheet } from './models/sheet.model.js';
 import { Note } from './models/note.model.js';
+import { Connection } from './models/connection.model.js';
 
 async function seed() {
   await connectDatabase();
 
-  await Note.deleteMany({});
+  await Promise.all([Sheet.deleteMany({}), Note.deleteMany({}), Connection.deleteMany({})]);
+
+  const sheets = await Sheet.insertMany([
+    { name: 'Welcome board', background: 'dots' },
+    { name: 'Grid demo', background: 'grid' },
+    { name: 'Blank paper', background: 'blank' },
+  ]);
+  console.log(`[seed] inserted ${sheets.length} sheets`);
+
+  const sheetId = sheets[0]._id; // sample notes live on the first sheet
   const notes = [
-    { content: 'Welcome to the board! 👋\nDrag me around.', x: 60, y: 80, z: 1, color: '#fff9c4' },
-    { content: 'Double-click the text to edit a note.', x: 320, y: 140, z: 2, color: '#c8e6c9' },
-    { content: 'Pick a color from the dots at the bottom.', x: 180, y: 320, z: 3, color: '#ffccbc' },
+    { sheetId, content: 'Welcome to the board! 👋\nDrag me around.', x: 60, y: 80, z: 1, color: '#fff9c4' },
+    { sheetId, content: 'Double-click the text to edit a note.', x: 320, y: 140, z: 2, color: '#c8e6c9' },
+    { sheetId, content: 'Pick a color from the dots at the bottom.', x: 180, y: 320, z: 3, color: '#ffccbc' },
   ];
   await Note.insertMany(notes);
-  console.log(`[seed] inserted ${notes.length} notes`);
+  console.log(`[seed] inserted ${notes.length} notes on "${sheets[0].name}"`);
 
   await disconnectDatabase();
   process.exit(0);

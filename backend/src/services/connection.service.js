@@ -3,8 +3,13 @@ import { createBaseService } from './base.service.js';
 
 const base = createBaseService(Connection);
 
-// All arrows are shown at once, oldest first — no pagination needed.
-export const listConnections = () => Connection.find({ deletedAt: null }).sort({ createdAt: 1 });
+// Arrows on a sheet, oldest first. If no sheetId is given, returns all
+// (back-compat until the frontend always scopes by sheet).
+export const listConnections = (sheetId) => {
+  const filter = { deletedAt: null };
+  if (sheetId) filter.sheetId = sheetId;
+  return Connection.find(filter).sort({ createdAt: 1 });
+};
 export const createConnection = (payload) => base.create(payload);
 export const deleteConnection = (id) => base.delete(id);
 
@@ -18,3 +23,7 @@ export const deleteConnectionsForNote = (noteId) =>
     { deletedAt: null, $or: [{ from: noteId }, { to: noteId }] },
     { deletedAt: new Date() },
   );
+
+// Cascade: soft-delete every arrow on a sheet (used when the sheet is removed).
+export const deleteConnectionsForSheet = (sheetId) =>
+  Connection.updateMany({ deletedAt: null, sheetId }, { deletedAt: new Date() });

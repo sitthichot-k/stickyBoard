@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 // An arrow from one note to another.
 const connectionSchema = new mongoose.Schema(
   {
+    // The sheet this arrow belongs to.
+    sheetId: { type: mongoose.Schema.Types.ObjectId, ref: 'Sheet', required: true, index: true },
     from: { type: mongoose.Schema.Types.ObjectId, ref: 'Note', required: true },
     to: { type: mongoose.Schema.Types.ObjectId, ref: 'Note', required: true },
     // Which edge of each note the arrow attaches to.

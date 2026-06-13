@@ -75,6 +75,21 @@ collaboration, export/import, image/file attachments, comments.
 | FR-THEME-003 | Centralised design tokens incl. a dynamic brand gradient. | ✅ |
 | FR-LAYOUT-001 | Sidebar (brand + navigation) and a floating bottom toolbox. | ✅ |
 
+### 3.7 Sheets — `Feature: Sheets`
+
+A user can't reach the note board directly; they first create/open a **sheet**.
+Each sheet owns its own notes and arrows and has a chosen background.
+
+| FR | Requirement | Status |
+| --- | --- | --- |
+| FR-SHEET-001 | Landing page lists existing sheets and offers "Create blank sheet"; the note board is reachable only via a sheet. | 🟡 (backend done) |
+| FR-SHEET-002 | Create a sheet with a name. | ✅ (backend) |
+| FR-SHEET-003 | Choose a sheet background: `dots`, `grid`, or `blank`. | ✅ (backend) |
+| FR-SHEET-004 | Open a sheet to its scoped note board. | 🟡 (backend done) |
+| FR-SHEET-005 | Notes and connections belong to a sheet (scoped by `sheetId`). | ✅ (backend) |
+| FR-SHEET-006 | Deleting a sheet removes its notes and arrows. | ✅ (backend) |
+| FR-SHEET-007 | The board renders the sheet's chosen background. | ⬜ (frontend) |
+
 ### 3.6 Backend & persistence — `Feature: API`
 
 | FR | Requirement | Status |
