@@ -1,6 +1,15 @@
 import * as users from '../services/user.service.js';
+import { getStats } from '../services/stats.service.js';
 
 const ROLES = ['user', 'admin'];
+
+export async function stats(req, res, next) {
+  try {
+    res.json(await getStats());
+  } catch (err) {
+    next(err);
+  }
+}
 
 export async function listUsers(req, res, next) {
   try {

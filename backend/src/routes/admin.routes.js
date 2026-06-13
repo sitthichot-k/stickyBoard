@@ -4,6 +4,7 @@ import * as controller from '../controllers/admin.controller.js';
 const router = Router();
 
 // Mounted behind requireAuth + requireAdmin (see routes/index.js).
+router.get('/stats', controller.stats);
 router.get('/users', controller.listUsers);
 router.post('/users', controller.createUser);
 router.patch('/users/:id/role', controller.updateRole);
