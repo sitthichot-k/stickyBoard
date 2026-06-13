@@ -1,6 +1,7 @@
 import * as service from '../services/sheet.service.js';
 import { deleteNotesForSheet } from '../services/note.service.js';
 import { deleteConnectionsForSheet } from '../services/connection.service.js';
+import { deleteStrokesForSheet } from '../services/stroke.service.js';
 
 const BACKGROUNDS = ['dots', 'grid', 'blank'];
 
@@ -40,8 +41,12 @@ export async function remove(req, res, next) {
   try {
     const sheet = await service.deleteSheet(req.params.id);
     if (!sheet) return res.status(404).json({ error: 'Sheet not found' });
-    // Cascade: soft-delete the sheet's notes and arrows.
-    await Promise.all([deleteNotesForSheet(sheet.id), deleteConnectionsForSheet(sheet.id)]);
+    // Cascade: soft-delete the sheet's notes, arrows, and drawings.
+    await Promise.all([
+      deleteNotesForSheet(sheet.id),
+      deleteConnectionsForSheet(sheet.id),
+      deleteStrokesForSheet(sheet.id),
+    ]);
     res.status(204).end();
   } catch (err) {
     next(err);

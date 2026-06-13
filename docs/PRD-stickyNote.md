@@ -99,6 +99,27 @@ Each sheet owns its own notes and arrows and has a chosen background.
 | FR-API-003 | Shared base service (`createBaseService`) for CRUD modules. | ✅ |
 | FR-API-004 | Seed script for sample data. | ✅ |
 
+### 3.8 Drawing — `Feature: Drawing`
+
+Freehand drawing on the sheet, alongside notes and arrows.
+
+| FR | Requirement | Status |
+| --- | --- | --- |
+| FR-NEW-005a | A `draw` tool with three styles — pencil, pen, brush (differing width/opacity). | 🟡 (backend done) |
+| FR-NEW-005b | Drag on the canvas to draw a freehand stroke; strokes persist per sheet. | 🟡 (backend done) |
+| FR-NEW-005c | Strokes are scoped to a sheet and removed when the sheet is deleted. | ✅ (backend) |
+| FR-NEW-005d | Drawing participates in undo/redo. | ⬜ (frontend) |
+| FR-NEW-006 | Tooltips on every toolbox icon. | ⬜ (frontend) |
+
+### 3.9 Board navigation — `Feature: Board nav`
+
+| FR | Requirement | Status |
+| --- | --- | --- |
+| FR-NEW-001 | "Create blank sheet" sits below the title (right-aligned); sheets page is left-aligned with a skeleton create card. | ✅ |
+| FR-NEW-002 | Opening a sheet centres the view on the frame. | ✅ |
+| FR-NEW-003 | Collapsible top-right minimap with notes + live viewport (click/drag to navigate). | ✅ |
+| FR-NEW-004 | Zoom in/out (30–200%). | ✅ |
+
 ## 4. Non-functional requirements
 
 | NFR | Requirement |
