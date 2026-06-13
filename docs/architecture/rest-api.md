@@ -27,6 +27,17 @@ an admin). Protected endpoints need an `Authorization: Bearer <token>` header.
 valid token**, and admin-only endpoints additionally require the `admin` role
 (`401` without a token, `403` without the role).
 
+## Admin (admin role required)
+
+| Method | Path | Description |
+| --- | --- | --- |
+| GET | `/api/v1/admin/users` | list users |
+| POST | `/api/v1/admin/users` | create a user — body `{ email, password, name?, role? }` |
+| PATCH | `/api/v1/admin/users/:id/role` | set a user's role — body `{ role }` |
+| DELETE | `/api/v1/admin/users/:id` | soft-delete a user → `204` |
+
+Admins can't change their own role or delete their own account.
+
 ## Health
 
 | Method | Path | Description |

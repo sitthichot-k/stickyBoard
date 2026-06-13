@@ -14,6 +14,7 @@ stores/auth.js       Pinia store — token + current user (login/logout/fetchMe)
 stores/sheets.js     Pinia store — sheet list + current sheet
 stores/notes.js      Pinia store — notes, connections, strokes, undo/redo (per sheet)
 views/LoginView.vue  full-screen sign-in (no shell)
+views/UsersView.vue  admin-only: manage users (list/create/role/delete)
 views/SheetsView.vue landing: list sheets + create (name + background)
 views/BoardView.vue  the canvas: pan, tools, arrows, toolbox (per sheet)
 views/MergePdfView.vue  tool: merge PDFs in-browser (pdf-lib)

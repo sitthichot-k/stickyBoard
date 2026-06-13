@@ -170,9 +170,9 @@ Admin-only user management (replaces public registration).
 
 | FR | Requirement | Status |
 | --- | --- | --- |
-| FR-ADMIN-001 | Admin-only endpoints: list / create / set-role / delete users (can't affect own account). | 🟡 |
-| FR-ADMIN-002 | An Admin sidebar group, visible only to admins. | ⬜ |
-| FR-ADMIN-003 | Users page: list, create, change role, and remove users. | ⬜ |
+| FR-ADMIN-001 | Admin-only endpoints: list / create / set-role / delete users (can't affect own account). | ✅ |
+| FR-ADMIN-002 | An Admin sidebar group, visible only to admins. | ✅ |
+| FR-ADMIN-003 | Users page: list, create, change role, and remove users. | ✅ |
 
 ### 3.15 Planned (not started)
 
