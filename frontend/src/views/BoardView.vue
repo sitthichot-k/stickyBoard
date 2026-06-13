@@ -11,7 +11,7 @@ const route = useRoute();
 const router = useRouter();
 const store = useNotesStore();
 const sheets = useSheetsStore();
-const { notes, connections, loading, error, colors, canUndo, canRedo } = storeToRefs(store);
+const { notes, connections, strokes, loading, error, colors, canUndo, canRedo } = storeToRefs(store);
 const { current: sheet } = storeToRefs(sheets);
 
 const bgClass = computed(() => `bg-${sheet.value?.background || 'dots'}`);
@@ -82,10 +82,59 @@ onUnmounted(() => window.removeEventListener('resize', syncView));
 /* ---- Tools ---- */
 const tool = ref('select');
 const tools = [
-  { id: 'select', icon: '🖱️', label: 'Select' },
-  { id: 'pan', icon: '✋', label: 'Pan' },
-  { id: 'connect', icon: '🔗', label: 'Connect' },
+  { id: 'select', icon: '🖱️', label: 'Select & move' },
+  { id: 'pan', icon: '✋', label: 'Pan the board' },
+  { id: 'connect', icon: '🔗', label: 'Connect notes' },
+  { id: 'draw', icon: '✏️', label: 'Draw' },
 ];
+
+/* ---- Drawing (draw tool) ---- */
+const STROKE_STYLES = {
+  pencil: { width: 2, opacity: 0.7 },
+  pen: { width: 3, opacity: 1 },
+  brush: { width: 9, opacity: 0.85 },
+};
+const drawTools = [
+  { id: 'pencil', icon: '✏️', label: 'Pencil' },
+  { id: 'pen', icon: '🖊️', label: 'Pen' },
+  { id: 'brush', icon: '🖌️', label: 'Brush' },
+];
+const drawColors = ['#1f2937', '#dc2626', '#2563eb', '#16a34a', '#d97706'];
+const drawTool = ref('pen');
+const drawColor = ref('#1f2937');
+const drawing = ref(null); // current stroke: { points: [x,y,...] } in frame coords
+
+function strokeOpacity(t) {
+  return STROKE_STYLES[t]?.opacity ?? 1;
+}
+function pointsToPath(points) {
+  let d = `M ${points[0]},${points[1]}`;
+  for (let i = 2; i < points.length; i += 2) d += ` L ${points[i]},${points[i + 1]}`;
+  return d;
+}
+
+function startStroke(e) {
+  const p = toFrame(e.clientX, e.clientY);
+  drawing.value = { points: [p.x, p.y] };
+  boardEl.value.setPointerCapture(e.pointerId);
+}
+function extendStroke(e) {
+  const p = toFrame(e.clientX, e.clientY);
+  drawing.value.points.push(p.x, p.y);
+}
+function finishStroke(e) {
+  boardEl.value.releasePointerCapture(e.pointerId);
+  const points = drawing.value.points;
+  drawing.value = null;
+  if (points.length >= 4) {
+    store.addStroke({
+      tool: drawTool.value,
+      color: drawColor.value,
+      width: STROKE_STYLES[drawTool.value].width,
+      points,
+    });
+  }
+}
 
 /* ---- Pan: drag the canvas to move around the frame ---- */
 const panning = ref(false);
@@ -93,17 +142,20 @@ let pan = null;
 
 function onBoardDown(e) {
   if (e.button !== 0) return;
+  if (tool.value === 'draw') return startStroke(e);
   if (tool.value !== 'pan' && e.target.closest('.note')) return;
   panning.value = true;
   pan = { x: e.clientX, y: e.clientY, left: boardEl.value.scrollLeft, top: boardEl.value.scrollTop };
   boardEl.value.setPointerCapture(e.pointerId);
 }
 function onBoardMove(e) {
+  if (drawing.value) return extendStroke(e);
   if (!pan) return;
   boardEl.value.scrollLeft = pan.left - (e.clientX - pan.x);
   boardEl.value.scrollTop = pan.top - (e.clientY - pan.y);
 }
 function onBoardUp(e) {
+  if (drawing.value) return finishStroke(e);
   if (!pan) return;
   boardEl.value.releasePointerCapture(e.pointerId);
   pan = null;
@@ -360,6 +412,25 @@ function onMiniUp(e) {
           :class="bgClass"
           :style="{ width: `${FRAME_W}px`, height: `${FRAME_H}px`, transform: `scale(${zoom})` }"
         >
+          <!-- Drawing layer — sits behind the notes. -->
+          <svg class="strokes" :width="FRAME_W" :height="FRAME_H">
+            <path
+              v-for="s in strokes"
+              :key="s.id"
+              :d="pointsToPath(s.points)"
+              :stroke="s.color"
+              :stroke-width="s.width"
+              :opacity="strokeOpacity(s.tool)"
+            />
+            <path
+              v-if="drawing"
+              :d="pointsToPath(drawing.points)"
+              :stroke="drawColor"
+              :stroke-width="STROKE_STYLES[drawTool].width"
+              :opacity="strokeOpacity(drawTool)"
+            />
+          </svg>
+
           <svg class="links" :width="FRAME_W" :height="FRAME_H">
             <defs>
               <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
@@ -440,12 +511,36 @@ function onMiniUp(e) {
       </template>
     </div>
 
+    <!-- Draw sub-toolbar (only while the draw tool is active) -->
+    <div v-if="tool === 'draw'" class="drawbar">
+      <button
+        v-for="d in drawTools"
+        :key="d.id"
+        class="drawbar__btn"
+        :class="{ active: drawTool === d.id }"
+        :data-tip="d.label"
+        @click="drawTool = d.id"
+      >
+        {{ d.icon }}
+      </button>
+      <span class="drawbar__sep" />
+      <button
+        v-for="c in drawColors"
+        :key="c"
+        class="drawbar__swatch"
+        :class="{ on: drawColor === c }"
+        :style="{ background: c }"
+        :title="c"
+        @click="drawColor = c"
+      />
+    </div>
+
     <!-- Floating toolbox (footer) -->
     <div class="toolbox">
-      <button class="toolbox__btn" title="Undo" :disabled="!canUndo" @click="store.undo()">
+      <button class="toolbox__btn" data-tip="Undo" :disabled="!canUndo" @click="store.undo()">
         <span class="toolbox__icon">↶</span>
       </button>
-      <button class="toolbox__btn" title="Redo" :disabled="!canRedo" @click="store.redo()">
+      <button class="toolbox__btn" data-tip="Redo" :disabled="!canRedo" @click="store.redo()">
         <span class="toolbox__icon">↷</span>
       </button>
       <span class="toolbox__sep" />
@@ -454,13 +549,13 @@ function onMiniUp(e) {
         :key="t.id"
         class="toolbox__btn"
         :class="{ active: tool === t.id }"
-        :title="t.label"
+        :data-tip="t.label"
         @click="tool = t.id"
       >
         <span class="toolbox__icon">{{ t.icon }}</span>
       </button>
       <span class="toolbox__sep" />
-      <button class="toolbox__btn toolbox__add" title="Add note" @click="addNote">
+      <button class="toolbox__btn toolbox__add" data-tip="Add note" @click="addNote">
         ＋<span class="toolbox__add-label">Note</span>
       </button>
     </div>
@@ -514,7 +609,8 @@ function onMiniUp(e) {
 .board.tool-pan.panning {
   cursor: grabbing;
 }
-.board.tool-connect {
+.board.tool-connect,
+.board.tool-draw {
   cursor: crosshair;
 }
 .board::-webkit-scrollbar {
@@ -529,6 +625,17 @@ function onMiniUp(e) {
   left: 0;
   transform-origin: 0 0;
   /* background pattern comes from a bg-dots|bg-grid|bg-blank class (per sheet) */
+}
+/* Drawing layer — behind the notes. */
+.strokes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.strokes path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .links {
   position: absolute;
@@ -653,6 +760,59 @@ function onMiniUp(e) {
   color: var(--color-text-muted);
 }
 
+/* ---- Draw sub-toolbar ---- */
+.drawbar {
+  position: absolute;
+  bottom: calc(var(--space-5) + 56px); /* sits above the toolbox */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+.drawbar__btn {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 1.05rem;
+}
+.drawbar__btn:hover {
+  background: var(--color-primary-soft);
+}
+.drawbar__btn.active {
+  background: var(--gradient-brand);
+  background-size: 200% 200%;
+}
+.drawbar__sep {
+  width: 1px;
+  height: 22px;
+  background: var(--color-border);
+  margin: 0 var(--space-1);
+}
+.drawbar__swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--color-surface);
+  box-shadow: 0 0 0 1px var(--color-border);
+  cursor: pointer;
+  padding: 0;
+}
+.drawbar__swatch.on {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
 /* ---- Floating toolbox ---- */
 .toolbox {
   position: absolute;
@@ -668,6 +828,28 @@ function onMiniUp(e) {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
+}
+/* Custom tooltips for icon buttons. */
+.toolbox__btn,
+.drawbar__btn {
+  position: relative;
+}
+.toolbox__btn[data-tip]:hover::after,
+.drawbar__btn[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--color-text);
+  color: var(--color-surface);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 40;
 }
 .toolbox__btn {
   display: flex;

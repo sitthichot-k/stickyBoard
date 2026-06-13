@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import * as api from '@/api/notes.js';
 import * as connectionApi from '@/api/connections.js';
+import * as strokeApi from '@/api/strokes.js';
 
 const COLORS = ['#fff9c4', '#c8e6c9', '#ffccbc', '#bbdefb', '#e1bee7', '#f8bbd0', '#ffffff'];
 
@@ -20,6 +21,7 @@ export const useNotesStore = defineStore('notes', {
     sheetId: null, // the sheet these notes belong to
     notes: [],
     connections: [],
+    strokes: [],
     loading: false,
     error: '',
     undoStack: [], // commands available to undo
@@ -37,12 +39,14 @@ export const useNotesStore = defineStore('notes', {
       this.loading = true;
       this.error = '';
       try {
-        const [notes, connections] = await Promise.all([
+        const [notes, connections, strokes] = await Promise.all([
           api.fetchNotes(sheetId),
           connectionApi.fetchConnections(sheetId),
+          strokeApi.fetchStrokes(sheetId),
         ]);
         this.notes = notes;
         this.connections = connections;
+        this.strokes = strokes;
         persisted.clear();
         notes.forEach(snapshot);
         this.undoStack = [];
@@ -228,6 +232,47 @@ export const useNotesStore = defineStore('notes', {
         this.record({
           undo: () => this._restoreConnection(id),
           redo: () => this._deleteConnection(id),
+        });
+      } catch (err) {
+        this.error = err.message;
+      }
+    },
+
+    /* ---- Drawing strokes ---- */
+    async _deleteStroke(id) {
+      this.strokes = this.strokes.filter((s) => s.id !== id);
+      await strokeApi.deleteStroke(id);
+    },
+    async _restoreStroke(id) {
+      const stroke = await strokeApi.restoreStroke(id);
+      if (!this.strokes.some((s) => s.id === stroke.id)) this.strokes.push(stroke);
+    },
+
+    async addStroke({ tool, color, width, points }) {
+      try {
+        const stroke = await strokeApi.createStroke({
+          sheetId: this.sheetId,
+          tool,
+          color,
+          width,
+          points,
+        });
+        this.strokes.push(stroke);
+        this.record({
+          undo: () => this._deleteStroke(stroke.id),
+          redo: () => this._restoreStroke(stroke.id),
+        });
+      } catch (err) {
+        this.error = err.message;
+      }
+    },
+
+    async removeStroke(id) {
+      try {
+        await this._deleteStroke(id);
+        this.record({
+          undo: () => this._restoreStroke(id),
+          redo: () => this._deleteStroke(id),
         });
       } catch (err) {
         this.error = err.message;
