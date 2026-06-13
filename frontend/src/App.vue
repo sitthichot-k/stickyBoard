@@ -22,6 +22,7 @@ function toggleTheme() {
 
         <span class="sidebar__group">Tools</span>
         <RouterLink to="/tools/merge-pdf">📄 Merge PDF</RouterLink>
+        <RouterLink to="/tools/scan-pdf">🖼️ Scan to PDF</RouterLink>
       </nav>
       <div class="sidebar__foot text-muted">v1.0</div>
     </aside>

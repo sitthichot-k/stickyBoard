@@ -140,11 +140,21 @@ no backend); no watermark while in development.
 | FR-PDF-003 | Reorder the files before merging. | ✅ |
 | FR-PDF-004 | Merge into a single PDF and download it (client-side via `pdf-lib`). | ✅ |
 
-### 3.12 Planned (not started)
+### 3.12 Scan to PDF — `Feature: Scan to PDF`
+
+A sidebar tool that combines image files into a single PDF. Client-side only.
 
 | FR | Requirement | Status |
 | --- | --- | --- |
-| FR-SCAN-001 | Scan to PDF tool (images → one PDF, client-side). | ⬜ |
+| FR-SCAN-001 | Sidebar "Scan to PDF" entry opens the tool at `/tools/scan-pdf`. | 🟡 |
+| FR-SCAN-002 | Select (click or drag & drop) multiple image files, with thumbnails; add/remove. | 🟡 |
+| FR-SCAN-003 | Reorder images before exporting. | 🟡 |
+| FR-SCAN-004 | Export one PDF — each image centred and fit onto an A4 page (`pdf-lib`). | 🟡 |
+
+### 3.13 Planned (not started)
+
+| FR | Requirement | Status |
+| --- | --- | --- |
 | FR-ADMIN-001 | Auth + roles and an admin menu. | ⬜ |
 | FR-DASH-001 | Admin dashboard visualising insights. | ⬜ |
 

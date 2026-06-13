@@ -16,6 +16,11 @@ const routes = [
     name: 'merge-pdf',
     component: () => import('@/views/MergePdfView.vue'),
   },
+  {
+    path: '/tools/scan-pdf',
+    name: 'scan-pdf',
+    component: () => import('@/views/ScanPdfView.vue'),
+  },
 ];
 
 const router = createRouter({
