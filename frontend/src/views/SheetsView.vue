@@ -53,18 +53,15 @@ function remove(id) {
 <template>
   <div class="sheets">
     <div class="sheets__head">
-      <div>
-        <h1>Your sheets</h1>
-        <span class="text-muted">{{ sheets.length }} sheet(s)</span>
-      </div>
+      <h1>Your sheets</h1>
+      <span class="text-muted">{{ sheets.length }} sheet(s)</span>
+    </div>
+
+    <div class="sheets__actions">
       <BaseButton @click="openCreate">+ Create blank sheet</BaseButton>
     </div>
 
     <BaseAlert v-if="error" variant="danger">{{ error }}</BaseAlert>
-
-    <p v-if="!loading && !sheets.length" class="text-muted sheets__empty">
-      No sheets yet — create your first one to start adding notes.
-    </p>
 
     <div class="sheets__grid">
       <button
@@ -83,6 +80,12 @@ function remove(id) {
           title="Delete sheet"
           @click.stop="remove(s.id)"
         >×</span>
+      </button>
+
+      <!-- Skeleton card: create a new sheet right from the grid. -->
+      <button class="card card--new" @click="openCreate">
+        <span class="card--new__plus">+</span>
+        <span>Create new sheet</span>
       </button>
     </div>
 
@@ -129,29 +132,47 @@ function remove(id) {
 
 <style scoped>
 .sheets {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: var(--space-6) var(--space-5);
+  /* left-aligned; top padding drops the title clear of the theme toggle */
+  padding: 80px var(--space-5) var(--space-6);
   height: 100%;
   overflow: auto;
 }
 .sheets__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--space-5);
+  margin-bottom: var(--space-4);
 }
 .sheets__head h1 {
   margin: 0;
 }
-.sheets__empty {
-  margin-top: var(--space-6);
-  text-align: center;
+/* Create button: below the title, right-aligned. */
+.sheets__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-4);
 }
 .sheets__grid {
   display: grid;
   gap: var(--space-4);
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+/* Skeleton "create new" card */
+.card--new {
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 170px;
+  border-style: dashed;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+.card--new:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.card--new__plus {
+  font-size: 2rem;
+  line-height: 1;
 }
 
 /* Sheet card */
