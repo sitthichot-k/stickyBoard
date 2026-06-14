@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/modules/auth/stores/auth.js';
+import { useSettingsStore } from '@/modules/settings/stores/settings.js';
 
 // Restore the saved theme (defaults to light) and apply it before paint.
 const theme = ref(localStorage.getItem('theme') || 'light');
@@ -16,9 +17,20 @@ function toggleTheme() {
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
+const settings = useSettingsStore();
 
 // Public pages (login) render full-screen without the app shell.
 const showShell = computed(() => !route.meta.public);
+const banner = computed(() => settings.announcement);
+
+// Load public settings (banner) whenever the user is signed in.
+watch(
+  () => auth.isAuthenticated,
+  (on) => {
+    if (on) settings.loadPublic();
+  },
+  { immediate: true },
+);
 
 function logout() {
   auth.logout();
@@ -42,6 +54,7 @@ function logout() {
           <span class="sidebar__group">Admin</span>
           <RouterLink to="/admin/dashboard">📊 Dashboard</RouterLink>
           <RouterLink to="/admin/users">👥 Users</RouterLink>
+          <RouterLink to="/admin/settings">⚙️ Settings</RouterLink>
         </template>
       </nav>
 
@@ -55,14 +68,19 @@ function logout() {
     </aside>
 
     <main class="app__main">
-      <button
-        class="theme-toggle"
-        :title="theme === 'light' ? 'Switch to dark' : 'Switch to light'"
-        @click="toggleTheme"
-      >
-        {{ theme === 'light' ? '🌙' : '☀️' }}
-      </button>
-      <RouterView />
+      <div v-if="banner.enabled && banner.message" class="banner" :class="`banner--${banner.level}`">
+        {{ banner.message }}
+      </div>
+      <div class="app__view">
+        <button
+          class="theme-toggle"
+          :title="theme === 'light' ? 'Switch to dark' : 'Switch to light'"
+          @click="toggleTheme"
+        >
+          {{ theme === 'light' ? '🌙' : '☀️' }}
+        </button>
+        <RouterView />
+      </div>
     </main>
   </div>
 
@@ -177,9 +195,33 @@ function logout() {
 
 /* ---- Main canvas area ---- */
 .app__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.app__view {
   position: relative;
   flex: 1;
   overflow: hidden;
+}
+.banner {
+  flex-shrink: 0;
+  padding: var(--space-2) var(--space-5);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-align: center;
+  color: #fff;
+}
+.banner--info {
+  background: var(--color-info);
+}
+.banner--warning {
+  background: var(--color-warning);
+}
+.banner--danger {
+  background: var(--color-danger);
 }
 .theme-toggle {
   position: absolute;
