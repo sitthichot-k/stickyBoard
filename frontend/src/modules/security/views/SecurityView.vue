@@ -151,10 +151,17 @@ loadAll();
         Delete role
       </BaseButton>
 
-      <form class="field field--grow new-role" @submit.prevent="addRole">
-        <input v-model="newRoleName" class="control" placeholder="New role name…" />
-        <BaseButton type="submit" variant="ghost">Add role</BaseButton>
-      </form>
+      <div class="field field--grow new-role">
+        <input
+          v-model="newRoleName"
+          class="control"
+          placeholder="New role name…"
+          @keyup.enter="addRole"
+        />
+        <BaseButton variant="ghost" :disabled="!newRoleName.trim()" @click="addRole">
+          Add role
+        </BaseButton>
+      </div>
 
       <input v-model="filter" class="control filter" placeholder="Filter pages…" />
     </div>

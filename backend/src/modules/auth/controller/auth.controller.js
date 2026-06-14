@@ -5,7 +5,7 @@ import { recordLog } from '../../log/service/log.service.js';
 import { permissionsForRole } from '../../security/service/permission.service.js';
 
 function signToken(user) {
-  return jwt.sign({ sub: user.id, role: user.role }, env.jwt.secret, {
+  return jwt.sign({ sub: user.id, role: user.role, email: user.email }, env.jwt.secret, {
     expiresIn: env.jwt.expiresIn,
   });
 }

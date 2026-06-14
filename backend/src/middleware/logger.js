@@ -56,6 +56,7 @@ export function requestLogger(req, res, next) {
       action: 'api.request',
       message: `${req.method} ${req.originalUrl} → ${statusCode}`,
       userId: req.user?.id ?? null,
+      userEmail: req.user?.email ?? '',
       meta: { method: req.method, path: req.originalUrl, status: statusCode, ms },
     });
   });
