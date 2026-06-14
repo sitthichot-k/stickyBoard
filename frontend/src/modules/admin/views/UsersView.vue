@@ -80,8 +80,9 @@ async function remove(u) {
 
     <BaseAlert v-if="error" variant="danger">{{ error }}</BaseAlert>
 
-    <table v-if="users.length" class="table">
-      <thead>
+    <div v-if="users.length" class="table-wrap">
+      <table class="table">
+        <thead>
         <tr>
           <th>Email</th>
           <th>Name</th>
@@ -111,8 +112,9 @@ async function remove(u) {
             <button class="del" :disabled="isSelf(u)" @click="remove(u)">Delete</button>
           </td>
         </tr>
-      </tbody>
-    </table>
+        </tbody>
+      </table>
+    </div>
 
     <!-- Create user modal -->
     <div v-if="showCreate" class="modal" @click.self="showCreate = false">
@@ -164,8 +166,14 @@ async function remove(u) {
 .page__head h1 {
   margin: 0;
 }
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-md);
+}
 .table {
   width: 100%;
+  min-width: 520px;
   border-collapse: collapse;
   background: var(--color-surface);
   border: 1px solid var(--color-border);

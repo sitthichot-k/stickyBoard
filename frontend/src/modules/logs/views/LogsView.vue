@@ -10,6 +10,7 @@ const loading = ref(false);
 const error = ref('');
 const filters = ref({ level: '', search: '' });
 const page = ref(1);
+const limit = ref(20);
 
 async function load() {
   loading.value = true;
@@ -17,7 +18,7 @@ async function load() {
   try {
     const res = await api.fetchLogs({
       page: page.value,
-      limit: 20,
+      limit: limit.value,
       level: filters.value.level || undefined,
       search: filters.value.search || undefined,
     });
@@ -65,6 +66,11 @@ function fmt(ts) {
         placeholder="Search action / message / email…"
         @keyup.enter="applyFilters"
       />
+      <select v-model.number="limit" class="control" @change="applyFilters">
+        <option :value="20">20 / page</option>
+        <option :value="50">50 / page</option>
+        <option :value="100">100 / page</option>
+      </select>
       <BaseButton variant="ghost" @click="applyFilters">Filter</BaseButton>
     </div>
 
@@ -72,8 +78,9 @@ function fmt(ts) {
     <p v-else-if="loading" class="text-muted">Loading…</p>
     <p v-else-if="!logs.length" class="text-muted">No logs match.</p>
 
-    <table v-if="logs.length" class="table">
-      <thead>
+    <div v-if="logs.length" class="table-wrap">
+      <table class="table">
+        <thead>
         <tr>
           <th>Time</th>
           <th>Level</th>
@@ -90,8 +97,9 @@ function fmt(ts) {
           <td class="nowrap text-muted">{{ l.userEmail || '—' }}</td>
           <td>{{ l.message }}</td>
         </tr>
-      </tbody>
-    </table>
+        </tbody>
+      </table>
+    </div>
 
     <div v-if="pagination.totalPages > 1" class="pager">
       <BaseButton variant="ghost" :disabled="page <= 1" @click="go(page - 1)">‹ Prev</BaseButton>
@@ -106,7 +114,6 @@ function fmt(ts) {
 <style scoped>
 .page {
   padding: 80px var(--space-5) var(--space-6);
-  max-width: 980px;
   height: 100%;
   overflow: auto;
 }
@@ -121,6 +128,7 @@ function fmt(ts) {
 }
 .filters {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-3);
   margin-bottom: var(--space-4);
 }
@@ -138,8 +146,14 @@ function fmt(ts) {
 .control:focus {
   outline: 2px solid var(--color-primary);
 }
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-md);
+}
 .table {
   width: 100%;
+  min-width: 680px;
   border-collapse: collapse;
   background: var(--color-surface);
   border: 1px solid var(--color-border);

@@ -23,6 +23,12 @@ const settings = useSettingsStore();
 const showShell = computed(() => !route.meta.public);
 const banner = computed(() => settings.announcement);
 
+// Mobile: the sidebar becomes a toggleable drawer; close it on navigation.
+const sidebarOpen = ref(false);
+watch(() => route.fullPath, () => {
+  sidebarOpen.value = false;
+});
+
 // Load public settings (banner) whenever the user is signed in.
 watch(
   () => auth.isAuthenticated,
@@ -39,7 +45,8 @@ function logout() {
 </script>
 
 <template>
-  <div v-if="showShell" class="app">
+  <div v-if="showShell" class="app" :class="{ 'app--drawer-open': sidebarOpen }">
+    <div class="sidebar-backdrop" @click="sidebarOpen = false" />
     <aside class="sidebar">
       <RouterLink to="/" class="sidebar__brand">📌 Sticky Board</RouterLink>
       <nav class="sidebar__nav">
@@ -73,6 +80,7 @@ function logout() {
         {{ banner.message }}
       </div>
       <div class="app__view">
+        <button class="sidebar-toggle" aria-label="Open menu" @click="sidebarOpen = true">☰</button>
         <button
           class="theme-toggle"
           :title="theme === 'light' ? 'Switch to dark' : 'Switch to light'"
@@ -240,5 +248,54 @@ function logout() {
 }
 .theme-toggle:hover {
   box-shadow: var(--shadow-md);
+}
+
+/* Hamburger + backdrop — only used on small screens. */
+.sidebar-toggle {
+  display: none;
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  z-index: 20;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 1.2rem;
+  box-shadow: var(--shadow-sm);
+}
+.sidebar-backdrop {
+  display: none;
+}
+
+/* ---- Mobile: sidebar becomes a slide-in drawer ---- */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: var(--shadow-md);
+  }
+  .app--drawer-open .sidebar {
+    transform: translateX(0);
+  }
+  .app--drawer-open .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: rgba(15, 23, 42, 0.45);
+  }
+  .sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 </style>
