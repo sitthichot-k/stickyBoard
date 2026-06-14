@@ -1,4 +1,5 @@
 import * as service from '../service/setting.service.js';
+import { recordLog } from '../../log/service/log.service.js';
 
 // Public (any signed-in user) — settings used for display, e.g. the banner.
 export async function getPublic(req, res, next) {
@@ -26,6 +27,12 @@ export async function update(req, res, next) {
       return res.status(400).json({ error: `Unknown setting: ${key}` });
     }
     const value = await service.setSetting(key, req.body?.value);
+    recordLog({
+      action: 'settings.update',
+      message: `Updated setting "${key}"`,
+      userId: req.user.id,
+      meta: { key },
+    });
     res.json({ key, value });
   } catch (err) {
     next(err);

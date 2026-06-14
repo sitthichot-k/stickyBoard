@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { env } from '../../../config/env.js';
 import * as users from '../../user/service/user.service.js';
+import { recordLog } from '../../log/service/log.service.js';
 
 function signToken(user) {
   return jwt.sign({ sub: user.id, role: user.role }, env.jwt.secret, {
@@ -16,8 +17,15 @@ export async function login(req, res, next) {
     }
     const user = await users.findByEmail(email);
     if (!user || !(await users.verifyPassword(password, user.passwordHash))) {
+      recordLog({ level: 'warn', action: 'auth.login.failed', message: `Failed login for ${email}` });
       return res.status(401).json({ error: 'Invalid email or password' });
     }
+    recordLog({
+      action: 'auth.login',
+      message: `${user.email} signed in`,
+      userId: user.id,
+      userEmail: user.email,
+    });
     res.json({ token: signToken(user), user });
   } catch (err) {
     next(err);

@@ -1,5 +1,6 @@
 import * as users from '../../user/service/user.service.js';
 import { getStats } from '../service/stats.service.js';
+import { recordLog } from '../../log/service/log.service.js';
 
 const ROLES = ['user', 'admin'];
 
@@ -35,6 +36,12 @@ export async function createUser(req, res, next) {
       return res.status(409).json({ error: 'A user with this email already exists' });
     }
     const user = await users.createUser({ email, password, name, role: role || 'user' });
+    recordLog({
+      action: 'user.create',
+      message: `Created user ${user.email} (${user.role})`,
+      userId: req.user.id,
+      meta: { targetId: user.id },
+    });
     res.status(201).json(user);
   } catch (err) {
     next(err);
@@ -52,6 +59,12 @@ export async function updateRole(req, res, next) {
     }
     const user = await users.setRole(req.params.id, role);
     if (!user) return res.status(404).json({ error: 'User not found' });
+    recordLog({
+      action: 'user.role',
+      message: `Set ${user.email} role to ${role}`,
+      userId: req.user.id,
+      meta: { targetId: user.id, role },
+    });
     res.json(user);
   } catch (err) {
     next(err);
@@ -65,6 +78,13 @@ export async function removeUser(req, res, next) {
     }
     const user = await users.deleteUser(req.params.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
+    recordLog({
+      level: 'warn',
+      action: 'user.delete',
+      message: `Deleted user ${user.email}`,
+      userId: req.user.id,
+      meta: { targetId: user.id },
+    });
     res.status(204).end();
   } catch (err) {
     next(err);
