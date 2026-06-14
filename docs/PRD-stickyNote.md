@@ -200,8 +200,8 @@ Admin-configurable app settings (no code change to update).
 
 | FR | Requirement | Status |
 | --- | --- | --- |
-| FR-LOG-001 | Persist event logs (auth, user/settings/security changes) with actor + metadata. | ⬜ |
-| FR-LOG-002 | Admin Logs page: list + filter. | ⬜ |
+| FR-LOG-001 | Persist event logs — semantic events (auth, user/settings changes) + every API request — with actor + metadata; auto-purge past a retention window. | ✅ |
+| FR-LOG-002 | Admin Logs page: list + filter (level/search) + per-page. | ✅ |
 
 ### 3.18 Security (dynamic RBAC) — `Feature: Security`
 

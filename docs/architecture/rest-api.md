@@ -32,6 +32,7 @@ valid token**, and admin-only endpoints additionally require the `admin` role
 | Method | Path | Description |
 | --- | --- | --- |
 | GET | `/api/v1/admin/stats` | dashboard analytics — counts, top sheets, 14-day activity |
+| GET | `/api/v1/logs` | event logs — paginated, filter by `?level=&action=&search=` |
 | GET | `/api/v1/admin/users` | list users |
 | POST | `/api/v1/admin/users` | create a user — body `{ email, password, name?, role? }` |
 | PATCH | `/api/v1/admin/users/:id/role` | set a user's role — body `{ role }` |

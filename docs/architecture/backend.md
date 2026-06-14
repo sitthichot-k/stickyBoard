@@ -78,7 +78,11 @@ that powers frontend undo. See
 
 `middleware/logger.js` logs one line per request on `res.finish` with a business
 code (HTTP status × 100, e.g. `20000`/`40400`) — invaluable for spotting what
-failed and where during development.
+failed and where during development. It also **persists every API request to the
+`log` collection** (configurable in `config/logger.js`: `LOG_API_TRAFFIC`, skip
+list, `LOG_RETENTION_DAYS`); the `log` module additionally records semantic audit
+events (`auth.login`, `user.*`, `settings.update`) and runs a daily cleanup of
+logs past the retention window.
 
 `middleware/errorHandler.js` provides `notFound` (404 JSON) and `errorHandler`
 (central handler — keeps all 4 args so Express recognises it). Both include the

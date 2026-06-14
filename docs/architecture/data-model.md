@@ -7,8 +7,9 @@ use Mongoose `timestamps` and a `toJSON` transform that exposes `id` (instead of
 A **sheet** is a board that owns its notes, arrows, and drawings. Every
 note/connection/stroke references its sheet via `sheetId`.
 
-A separate `users` collection backs authentication, and a `settings` collection
-holds admin-configurable key/value app settings (see below).
+A separate `users` collection backs authentication, a `settings` collection
+holds admin-configurable key/value app settings, and a `logs` collection stores
+audit/event records (see below).
 
 ## User
 
@@ -31,6 +32,20 @@ key/value app settings (upserted; no soft delete).
 | --- | --- | --- | --- |
 | `key` | String | — | required, unique (e.g. `announcement`) |
 | `value` | Mixed | `{}` | merged with code defaults on read |
+
+## Log
+
+`backend/src/modules/log/models/log.model.js` — append-only audit/event log
+(auto-purged past `LOG_RETENTION_DAYS`).
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `level` | enum info/warn/error | `info` | severity |
+| `action` | String | — | e.g. `auth.login`, `user.create`, `api.request` |
+| `message` | String | `''` | human-readable summary |
+| `userId` | ObjectId (ref User) | `null` | actor |
+| `userEmail` | String | `''` | denormalised actor email |
+| `meta` | Mixed | `{}` | extra context (method/path/status, target id, …) |
 
 ## Sheet
 

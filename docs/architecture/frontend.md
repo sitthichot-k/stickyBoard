@@ -29,6 +29,7 @@ Modules:
   admin api.
 - **settings** — `SettingsView` (admin) + a settings store; drives the
   site-wide announcement banner in `App.vue`.
+- **logs** — `LogsView` (admin): paginated event log with level/search filters.
 - **tools** — `MergePdfView`, `ScanPdfView` (client-side, standalone).
 
 ## Shell & theming (`App.vue`)
