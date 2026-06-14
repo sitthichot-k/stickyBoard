@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import * as api from '@/modules/security/api/security.js';
 import BaseAlert from '@/components/BaseAlert.vue';
 import BaseButton from '@/components/BaseButton.vue';
@@ -14,6 +14,8 @@ const selectedRole = ref('');
 const grants = ref({}); // { pageKey: [caps] }
 const filter = ref('');
 const newRoleName = ref('');
+const showAddRole = ref(false);
+const addRoleInput = ref(null);
 const loading = ref(true);
 const error = ref('');
 
@@ -93,6 +95,13 @@ function toggleAll(pageKey) {
   save(pageKey, [...set]);
 }
 
+function openAddRole() {
+  newRoleName.value = '';
+  error.value = '';
+  showAddRole.value = true;
+  nextTick(() => addRoleInput.value?.focus());
+}
+
 async function addRole() {
   const name = newRoleName.value.trim();
   if (!name) return;
@@ -101,6 +110,7 @@ async function addRole() {
     const role = await api.createRole({ name });
     roles.value.push(role);
     newRoleName.value = '';
+    showAddRole.value = false;
     selectedRole.value = role.key; // triggers loadMatrix
   } catch (e) {
     error.value = e.message;
@@ -151,19 +161,14 @@ loadAll();
         Delete role
       </BaseButton>
 
-      <div class="field field--grow new-role">
-        <input
-          v-model="newRoleName"
-          class="control"
-          placeholder="New role name…"
-          @keyup.enter="addRole"
-        />
-        <BaseButton variant="ghost" :disabled="!newRoleName.trim()" @click="addRole">
-          Add role
-        </BaseButton>
-      </div>
+      <input
+        v-model="filter"
+        class="control filter--grow"
+        type="search"
+        placeholder="🔍 Search pages…"
+      />
 
-      <input v-model="filter" class="control filter" placeholder="Filter pages…" />
+      <BaseButton variant="ghost" @click="openAddRole">+ Add role</BaseButton>
     </div>
 
     <p v-if="isAdminRole" class="text-muted note">
@@ -215,6 +220,27 @@ loadAll();
         </tbody>
       </table>
     </div>
+
+    <!-- Add role dialog -->
+    <div v-if="showAddRole" class="modal" @click.self="showAddRole = false">
+      <div class="modal__box">
+        <h2>New role</h2>
+        <label class="field">
+          <span class="field__label">Role name</span>
+          <input
+            ref="addRoleInput"
+            v-model="newRoleName"
+            class="control"
+            placeholder="e.g. Editor"
+            @keyup.enter="addRole"
+          />
+        </label>
+        <div class="modal__actions">
+          <BaseButton variant="ghost" @click="showAddRole = false">Cancel</BaseButton>
+          <BaseButton :disabled="!newRoleName.trim()" @click="addRole">Create</BaseButton>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -255,15 +281,6 @@ loadAll();
 .field--grow {
   flex: 1;
 }
-.new-role {
-  flex-direction: row;
-  align-items: stretch;
-  gap: var(--space-2);
-  min-width: 220px;
-}
-.new-role .control {
-  flex: 1;
-}
 .control {
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--color-border);
@@ -275,8 +292,10 @@ loadAll();
 .control:focus {
   outline: 2px solid var(--color-primary);
 }
-.filter {
-  margin-left: auto;
+/* the page search bar fills the toolbar; Add role sits at the far right */
+.filter--grow {
+  flex: 1;
+  min-width: 200px;
 }
 .danger-btn:hover {
   color: var(--color-danger);
@@ -368,5 +387,35 @@ loadAll();
 }
 .switch--logs.on {
   background: var(--color-info);
+}
+
+/* Add role dialog */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.45);
+}
+.modal__box {
+  width: min(380px, 92vw);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.modal__box h2 {
+  margin: 0;
+}
+.modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
 }
 </style>
