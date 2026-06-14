@@ -1,5 +1,5 @@
 import { Permission } from '../models/permission.model.js';
-import { PAGES, CAPABILITY_KEYS, ADMIN_ROLE } from '../catalog.js';
+import { PAGES, CAPABILITY_KEYS, ADMIN_ROLE, DEFAULT_PERMISSIONS } from '../catalog.js';
 
 // All permission rows for a role, as a { pageKey: Set(caps) } lookup.
 async function grantsForRole(roleKey) {
@@ -51,3 +51,17 @@ export async function can(roleKey, pageKey, capability) {
 
 // Remove every rule for a role (when a custom role is deleted).
 export const clearRole = (roleKey) => Permission.deleteMany({ roleKey });
+
+// Seed the default matrix the first time it's empty. Idempotent and
+// non-destructive — once any rule exists (admin has configured things) it does
+// nothing, so it's safe to run on every boot.
+export async function ensureDefaultPermissions() {
+  if ((await Permission.estimatedDocumentCount()) > 0) return;
+  const ops = [];
+  for (const [roleKey, pages] of Object.entries(DEFAULT_PERMISSIONS)) {
+    for (const [pageKey, granted] of Object.entries(pages)) {
+      ops.push(setRow(roleKey, pageKey, granted));
+    }
+  }
+  await Promise.all(ops);
+}

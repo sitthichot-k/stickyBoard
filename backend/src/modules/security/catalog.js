@@ -106,3 +106,16 @@ export const SYSTEM_ROLES = [
 ];
 
 export const ADMIN_ROLE = 'admin';
+
+// Default permissions seeded the first time the matrix is empty (admin is
+// implicitly full-access, so only the `user` role needs defaults). Boards are
+// fully usable and owner-scoped; the PDF tools are view-only; no admin pages.
+const BOARD_CAPS = ['view', 'edit', 'delete', 'action', 'owner', 'logs'];
+export const DEFAULT_PERMISSIONS = {
+  user: {
+    sheets: BOARD_CAPS,
+    board: BOARD_CAPS,
+    'merge-pdf': ['view'],
+    'scan-pdf': ['view'],
+  },
+};

@@ -11,10 +11,6 @@ import { Note } from '../modules/note/models/note.model.js';
 import { Connection } from '../modules/connection/models/connection.model.js';
 import { User } from '../modules/user/models/user.model.js';
 import { createUser } from '../modules/user/service/user.service.js';
-import { Role } from '../modules/security/models/role.model.js';
-import { Permission } from '../modules/security/models/permission.model.js';
-import { ensureSystemRoles } from '../modules/security/service/role.service.js';
-import { setRow } from '../modules/security/service/permission.service.js';
 
 async function seed() {
   await connectDatabase();
@@ -30,18 +26,9 @@ async function seed() {
   await createUser({ email: 'user@example.com', password: 'user1234', name: 'User', role: 'user' });
   console.log(`[seed] admin: ${env.seedAdmin.email} / ${env.seedAdmin.password}`);
 
-  // Roles & permissions — system roles + sensible defaults for the `user` role
-  // (admin is implicitly full-access). Boards are owner-scoped for regular users.
-  await Promise.all([Role.deleteMany({}), Permission.deleteMany({})]);
-  await ensureSystemRoles();
-  const boardCaps = ['view', 'edit', 'delete', 'action', 'owner', 'logs'];
-  await Promise.all([
-    setRow('user', 'sheets', boardCaps),
-    setRow('user', 'board', boardCaps),
-    setRow('user', 'merge-pdf', ['view']),
-    setRow('user', 'scan-pdf', ['view']),
-  ]);
-  console.log('[seed] roles: admin, user (+ default user permissions)');
+  // Roles & the permission matrix are bootstrapped automatically on server boot
+  // (ensureSystemRoles + ensureDefaultPermissions), so seeding only handles
+  // accounts and sample board content.
 
   await Promise.all([Sheet.deleteMany({}), Note.deleteMany({}), Connection.deleteMany({})]);
 
