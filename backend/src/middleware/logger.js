@@ -1,5 +1,7 @@
 import { loggerConfig } from '../config/logger.js';
 import { recordLog } from '../modules/log/service/log.service.js';
+import { can } from '../modules/security/service/permission.service.js';
+import { pageForApiPath } from '../modules/security/catalog.js';
 
 // Human-readable label per HTTP status (extend as needed).
 const STATUS_LABEL = {
@@ -32,7 +34,7 @@ export function statusLabel(status) {
  */
 export function requestLogger(req, res, next) {
   const start = Date.now();
-  res.on('finish', () => {
+  res.on('finish', async () => {
     const ms = Date.now() - start;
     const { statusCode } = res;
     const tag = statusCode >= 500 ? 'ERR ' : statusCode >= 400 ? 'WARN' : 'OK  ';
@@ -41,21 +43,21 @@ export function requestLogger(req, res, next) {
     else if (statusCode >= 400) console.warn(line);
     else console.log(line);
 
-    // Persist every API request as a DB log (configurable; skips CORS preflight
-    // and noisy paths).
-    if (
-      loggerConfig.logApiTraffic &&
-      req.method !== 'OPTIONS' &&
-      !loggerConfig.skipPaths.some((p) => req.originalUrl.startsWith(p))
-    ) {
-      recordLog({
-        level: statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info',
-        action: 'api.request',
-        message: `${req.method} ${req.originalUrl} → ${statusCode}`,
-        userId: req.user?.id ?? null,
-        meta: { method: req.method, path: req.originalUrl, status: statusCode, ms },
-      });
-    }
+    // Persist the request as a DB log unless: logging is off, it's a CORS
+    // preflight, it hits a noisy path, or the request's page has its "Logs"
+    // capability turned off for the acting role (the permission matrix).
+    if (!loggerConfig.logApiTraffic || req.method === 'OPTIONS') return;
+    if (loggerConfig.skipPaths.some((p) => req.originalUrl.startsWith(p))) return;
+    const page = pageForApiPath(req.originalUrl);
+    if (page && req.user?.role && !(await can(req.user.role, page.key, 'logs'))) return;
+
+    recordLog({
+      level: statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info',
+      action: 'api.request',
+      message: `${req.method} ${req.originalUrl} → ${statusCode}`,
+      userId: req.user?.id ?? null,
+      meta: { method: req.method, path: req.originalUrl, status: statusCode, ms },
+    });
   });
   next();
 }

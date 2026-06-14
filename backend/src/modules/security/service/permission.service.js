@@ -49,6 +49,12 @@ export async function can(roleKey, pageKey, capability) {
   return row ? row.granted.includes(capability) : false;
 }
 
+// Is a role limited to its own boards? (owner cap on the boards page, never
+// admin — admin sees everything).
+export async function isOwnerScoped(roleKey) {
+  return roleKey !== ADMIN_ROLE && (await can(roleKey, 'sheets', 'owner'));
+}
+
 // Remove every rule for a role (when a custom role is deleted).
 export const clearRole = (roleKey) => Permission.deleteMany({ roleKey });
 
