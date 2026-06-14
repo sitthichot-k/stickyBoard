@@ -8,6 +8,7 @@ import strokeRoutes from '../modules/stroke/stroke.routes.js';
 import adminRoutes from '../modules/admin/admin.routes.js';
 import settingRoutes from '../modules/setting/setting.routes.js';
 import logRoutes from '../modules/log/log.routes.js';
+import securityRoutes from '../modules/security/security.routes.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
@@ -26,5 +27,6 @@ router.use('/settings', settingRoutes); // mixed access — guards are per-route
 // Admin-only.
 router.use('/admin', requireAuth, requireAdmin, adminRoutes);
 router.use('/logs', requireAuth, requireAdmin, logRoutes);
+router.use('/security', requireAuth, requireAdmin, securityRoutes);
 
 export default router;

@@ -2,10 +2,12 @@ import app from './app.js';
 import { env } from '../config/env.js';
 import { connectDatabase, disconnectDatabase } from '../config/db.js';
 import { startLogCleanup } from '../modules/log/service/log.service.js';
+import { ensureSystemRoles } from '../modules/security/service/role.service.js';
 
 async function start() {
   await connectDatabase();
   startLogCleanup(); // purge logs past the retention window (now + daily)
+  await ensureSystemRoles(); // make sure the admin/user roles always exist
 
   const server = app.listen(env.port, () => {
     console.log(`[server] listening on http://localhost:${env.port} (${env.nodeEnv})`);
