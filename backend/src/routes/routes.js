@@ -24,9 +24,10 @@ router.use('/connections', requireAuth, connectionRoutes);
 router.use('/strokes', requireAuth, strokeRoutes);
 router.use('/settings', settingRoutes); // mixed access — guards are per-route
 
-// Admin-only.
-router.use('/admin', requireAuth, requireAdmin, adminRoutes);
-router.use('/logs', requireAuth, requireAdmin, logRoutes);
+// Permission-gated (per-route requirePermission inside each router; admin always
+// passes). The permission config surface itself stays hard admin-only.
+router.use('/admin', requireAuth, adminRoutes);
+router.use('/logs', requireAuth, logRoutes);
 router.use('/security', requireAuth, requireAdmin, securityRoutes);
 
 export default router;

@@ -20,6 +20,15 @@ export async function getMatrix(roleKey) {
   });
 }
 
+// Compact { pageKey: [caps] } map of everything a role can do — sent to the
+// frontend (via /auth/me) to drive route guards and the sidebar.
+export async function permissionsForRole(roleKey) {
+  const rows = await getMatrix(roleKey);
+  const out = {};
+  for (const row of rows) if (row.granted.length) out[row.pageKey] = row.granted;
+  return out;
+}
+
 // Replace a single cell's granted list (validated against the catalogue).
 export async function setRow(roleKey, pageKey, granted) {
   const clean = [...new Set(granted)].filter((c) => CAPABILITY_KEYS.includes(c));

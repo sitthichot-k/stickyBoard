@@ -1,8 +1,10 @@
 import * as users from '../../user/service/user.service.js';
 import { getStats } from '../service/stats.service.js';
 import { recordLog } from '../../log/service/log.service.js';
+import { getRole } from '../../security/service/role.service.js';
 
-const ROLES = ['user', 'admin'];
+// A role is valid if it exists (and isn't soft-deleted) in the roles collection.
+const isValidRole = async (role) => Boolean(await getRole(role));
 
 export async function stats(req, res, next) {
   try {
@@ -29,8 +31,8 @@ export async function createUser(req, res, next) {
     if (password.length < 6) {
       return res.status(400).json({ error: 'password must be at least 6 characters' });
     }
-    if (role && !ROLES.includes(role)) {
-      return res.status(400).json({ error: `role must be one of: ${ROLES.join(', ')}` });
+    if (role && !(await isValidRole(role))) {
+      return res.status(400).json({ error: `Unknown role: ${role}` });
     }
     if (await users.findByEmail(email)) {
       return res.status(409).json({ error: 'A user with this email already exists' });
@@ -51,8 +53,8 @@ export async function createUser(req, res, next) {
 export async function updateRole(req, res, next) {
   try {
     const { role } = req.body ?? {};
-    if (!ROLES.includes(role)) {
-      return res.status(400).json({ error: `role must be one of: ${ROLES.join(', ')}` });
+    if (!role || !(await isValidRole(role))) {
+      return res.status(400).json({ error: `Unknown role: ${role}` });
     }
     if (req.params.id === req.user.id) {
       return res.status(400).json({ error: 'You cannot change your own role' });

@@ -5,7 +5,9 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
     passwordHash: { type: String, required: true },
     name: { type: String, default: '', trim: true },
-    role: { type: String, enum: ['user', 'admin'], default: 'user' },
+    // References a Role.key. Validated against the roles collection on
+    // create/update (custom roles are allowed) rather than a fixed enum.
+    role: { type: String, default: 'user', lowercase: true, trim: true },
     deletedAt: { type: Date, default: null },
   },
   {
