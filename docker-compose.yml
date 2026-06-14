@@ -45,6 +45,7 @@ services:
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-admin1234}
       LOG_API_TRAFFIC: ${LOG_API_TRAFFIC:-true}
       LOG_RETENTION_DAYS: ${LOG_RETENTION_DAYS:-30}
+      RATE_LIMIT: ${RATE_LIMIT:-true}
     # nodemon with -L (legacy/polling watch) — required for Windows bind mounts.
     command: ["npx", "nodemon", "-L", "src/routes/server.js"]
     volumes:
