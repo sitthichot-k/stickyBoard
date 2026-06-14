@@ -10,7 +10,8 @@
   "scripts": {
     "start": "node src/routes/server.js",
     "dev": "nodemon src/routes/server.js",
-    "seed": "node src/routes/seed.js"
+    "seed": "node src/routes/seed.js",
+    "backfill:owners": "node src/routes/backfill-owners.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

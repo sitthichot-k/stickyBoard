@@ -17,7 +17,7 @@ async function seed() {
 
   // Users — seed an admin + a regular user (login-only: no public sign-up).
   await User.deleteMany({});
-  await createUser({
+  const admin = await createUser({
     email: env.seedAdmin.email,
     password: env.seedAdmin.password,
     name: 'Admin',
@@ -29,9 +29,9 @@ async function seed() {
   await Promise.all([Sheet.deleteMany({}), Note.deleteMany({}), Connection.deleteMany({})]);
 
   const sheets = await Sheet.insertMany([
-    { name: 'Welcome board', background: 'dots' },
-    { name: 'Grid demo', background: 'grid' },
-    { name: 'Blank paper', background: 'blank' },
+    { name: 'Welcome board', background: 'dots', ownerId: admin.id },
+    { name: 'Grid demo', background: 'grid', ownerId: admin.id },
+    { name: 'Blank paper', background: 'blank', ownerId: admin.id },
   ]);
   console.log(`[seed] inserted ${sheets.length} sheets`);
 

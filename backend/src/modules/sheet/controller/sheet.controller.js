@@ -30,7 +30,11 @@ export async function create(req, res, next) {
     if (background && !BACKGROUNDS.includes(background)) {
       return res.status(400).json({ error: `background must be one of: ${BACKGROUNDS.join(', ')}` });
     }
-    const sheet = await service.createSheet({ name: name.trim(), background });
+    const sheet = await service.createSheet({
+      name: name.trim(),
+      background,
+      ownerId: req.user?.id ?? null,
+    });
     res.status(201).json(sheet);
   } catch (err) {
     next(err);

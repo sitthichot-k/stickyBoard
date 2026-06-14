@@ -3,8 +3,13 @@ import { createBaseService } from '../../../helpers/base.service.js';
 
 const base = createBaseService(Sheet, { searchableFields: ['name'] });
 
-// Sheets are listed newest-first on the landing page.
-export const listSheets = () => Sheet.find({ deletedAt: null }).sort({ createdAt: -1 });
+// Sheets are listed newest-first on the landing page. Pass `ownerId` to scope
+// the list to one user's boards (used by "owner mode").
+export const listSheets = ({ ownerId } = {}) => {
+  const filter = { deletedAt: null };
+  if (ownerId) filter.ownerId = ownerId;
+  return Sheet.find(filter).sort({ createdAt: -1 });
+};
 export const getSheet = (id) => base.searchOne(id);
 export const createSheet = (payload) => base.create(payload);
 export const deleteSheet = (id) => base.delete(id);
