@@ -33,14 +33,6 @@ export const PAGES = [
     ownerScoped: true,
     apiPrefixes: ['/api/v1/sheets', '/api/v1/notes', '/api/v1/connections', '/api/v1/strokes'],
   },
-  {
-    key: 'board',
-    label: 'Board',
-    path: '/sheet/:id',
-    group: 'Boards',
-    ownerScoped: true,
-    apiPrefixes: [],
-  },
   { key: 'merge-pdf', label: 'Merge PDF', path: '/tools/merge-pdf', group: 'Tools', apiPrefixes: [] },
   { key: 'scan-pdf', label: 'Scan to PDF', path: '/tools/scan-pdf', group: 'Tools', apiPrefixes: [] },
   {
@@ -114,7 +106,6 @@ const BOARD_CAPS = ['view', 'edit', 'delete', 'action', 'owner', 'logs'];
 export const DEFAULT_PERMISSIONS = {
   user: {
     sheets: BOARD_CAPS,
-    board: BOARD_CAPS,
     'merge-pdf': ['view'],
     'scan-pdf': ['view'],
   },

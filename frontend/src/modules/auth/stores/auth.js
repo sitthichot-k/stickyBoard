@@ -9,6 +9,15 @@ export const useAuthStore = defineStore('auth', {
   getters: {
     isAuthenticated: (state) => !!state.token,
     isAdmin: (state) => state.user?.role === 'admin',
+    // Resolved permission map { pageKey: [caps] } from the backend.
+    permissions: (state) => state.user?.permissions || {},
+    // can(page, capability) — admin always passes.
+    can: (state) => (page, capability) =>
+      state.user?.role === 'admin' || (state.user?.permissions?.[page] || []).includes(capability),
+    // canAccess(page) — may the user open the page at all?
+    canAccess() {
+      return (page) => this.can(page, 'view');
+    },
   },
   actions: {
     async login(email, password) {

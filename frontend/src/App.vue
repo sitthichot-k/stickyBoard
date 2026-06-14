@@ -23,6 +23,34 @@ const settings = useSettingsStore();
 const showShell = computed(() => !route.meta.public);
 const banner = computed(() => settings.announcement);
 
+// Sidebar navigation — each item maps to a permission page; only the ones the
+// user can access are shown (admin sees all), and empty groups are hidden.
+const navGroups = [
+  { name: 'Boards', items: [{ to: '/', label: '🗒️ Board', page: 'sheets' }] },
+  {
+    name: 'Tools',
+    items: [
+      { to: '/tools/merge-pdf', label: '📄 Merge PDF', page: 'merge-pdf' },
+      { to: '/tools/scan-pdf', label: '🖼️ Scan to PDF', page: 'scan-pdf' },
+    ],
+  },
+  {
+    name: 'Admin',
+    items: [
+      { to: '/admin/dashboard', label: '📊 Dashboard', page: 'admin-dashboard' },
+      { to: '/admin/users', label: '👥 Users', page: 'admin-users' },
+      { to: '/admin/settings', label: '⚙️ Settings', page: 'admin-settings' },
+      { to: '/admin/logs', label: '📋 Logs', page: 'admin-logs' },
+      { to: '/admin/security', label: '🛡️ Permission Matrix', page: 'admin-security' },
+    ],
+  },
+];
+const visibleGroups = computed(() =>
+  navGroups
+    .map((g) => ({ ...g, items: g.items.filter((i) => auth.canAccess(i.page)) }))
+    .filter((g) => g.items.length),
+);
+
 // Mobile: the sidebar becomes a toggleable drawer; close it on navigation.
 const sidebarOpen = ref(false);
 watch(() => route.fullPath, () => {
@@ -50,20 +78,9 @@ function logout() {
     <aside class="sidebar">
       <RouterLink to="/" class="sidebar__brand">📌 Sticky Board</RouterLink>
       <nav class="sidebar__nav">
-        <span class="sidebar__group">Boards</span>
-        <RouterLink to="/">🗒️ Board</RouterLink>
-
-        <span class="sidebar__group">Tools</span>
-        <RouterLink to="/tools/merge-pdf">📄 Merge PDF</RouterLink>
-        <RouterLink to="/tools/scan-pdf">🖼️ Scan to PDF</RouterLink>
-
-        <template v-if="auth.isAdmin">
-          <span class="sidebar__group">Admin</span>
-          <RouterLink to="/admin/dashboard">📊 Dashboard</RouterLink>
-          <RouterLink to="/admin/users">👥 Users</RouterLink>
-          <RouterLink to="/admin/settings">⚙️ Settings</RouterLink>
-          <RouterLink to="/admin/logs">📋 Logs</RouterLink>
-          <RouterLink to="/admin/security">🛡️ Permission Matrix</RouterLink>
+        <template v-for="g in visibleGroups" :key="g.name">
+          <span class="sidebar__group">{{ g.name }}</span>
+          <RouterLink v-for="i in g.items" :key="i.to" :to="i.to">{{ i.label }}</RouterLink>
         </template>
       </nav>
 

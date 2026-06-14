@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '@/modules/auth/stores/auth.js';
 
+// `meta.page` ties a route to a permission-matrix page key; the guard checks
+// the user can view it (admin always can).
 const routes = [
   {
     path: '/login',
@@ -9,54 +11,64 @@ const routes = [
     meta: { public: true },
   },
   {
+    path: '/no-access',
+    name: 'no-access',
+    component: () => import('@/modules/auth/views/NoAccessView.vue'),
+    meta: { public: true },
+  },
+  {
     path: '/',
     name: 'sheets',
     component: () => import('@/modules/board/views/SheetsView.vue'),
+    meta: { page: 'sheets' },
   },
   {
     path: '/sheet/:id',
     name: 'board',
     component: () => import('@/modules/board/views/BoardView.vue'),
+    meta: { page: 'sheets' },
   },
   {
     path: '/tools/merge-pdf',
     name: 'merge-pdf',
     component: () => import('@/modules/tools/views/MergePdfView.vue'),
+    meta: { page: 'merge-pdf' },
   },
   {
     path: '/tools/scan-pdf',
     name: 'scan-pdf',
     component: () => import('@/modules/tools/views/ScanPdfView.vue'),
+    meta: { page: 'scan-pdf' },
   },
   {
     path: '/admin/dashboard',
     name: 'admin-dashboard',
     component: () => import('@/modules/admin/views/DashboardView.vue'),
-    meta: { admin: true },
+    meta: { page: 'admin-dashboard' },
   },
   {
     path: '/admin/users',
     name: 'admin-users',
     component: () => import('@/modules/admin/views/UsersView.vue'),
-    meta: { admin: true },
+    meta: { page: 'admin-users' },
   },
   {
     path: '/admin/settings',
     name: 'admin-settings',
     component: () => import('@/modules/settings/views/SettingsView.vue'),
-    meta: { admin: true },
+    meta: { page: 'admin-settings' },
   },
   {
     path: '/admin/logs',
     name: 'admin-logs',
     component: () => import('@/modules/logs/views/LogsView.vue'),
-    meta: { admin: true },
+    meta: { page: 'admin-logs' },
   },
   {
     path: '/admin/security',
     name: 'admin-security',
     component: () => import('@/modules/security/views/SecurityView.vue'),
-    meta: { admin: true },
+    meta: { page: 'admin-security' },
   },
 ];
 
@@ -68,7 +80,7 @@ const router = createRouter({
 // The whole app requires login; only routes with meta.public are open.
 router.beforeEach(async (to) => {
   const auth = useAuthStore();
-  // Make sure the current user is loaded before role-based checks (e.g. refresh).
+  // Make sure the current user (incl. permissions) is loaded before checks.
   if (auth.token && !auth.user) await auth.fetchMe();
 
   if (!to.meta.public && !auth.isAuthenticated) {
@@ -77,8 +89,10 @@ router.beforeEach(async (to) => {
   if (to.name === 'login' && auth.isAuthenticated) {
     return { path: '/' };
   }
-  if (to.meta.admin && !auth.isAdmin) {
-    return { path: '/' };
+  // Permission-gated pages: fall back to the boards page, or a notice if the
+  // user can't access anything.
+  if (to.meta.page && !auth.canAccess(to.meta.page)) {
+    return auth.canAccess('sheets') ? { path: '/' } : { name: 'no-access' };
   }
   return true;
 });
