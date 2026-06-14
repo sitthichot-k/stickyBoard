@@ -1,12 +1,14 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import * as api from '@/modules/admin/api/admin.js';
+import { fetchRoles } from '@/modules/security/api/security.js';
 import { useAuthStore } from '@/modules/auth/stores/auth.js';
 import BaseButton from '@/components/BaseButton.vue';
 import BaseAlert from '@/components/BaseAlert.vue';
 
 const auth = useAuthStore();
 const users = ref([]);
+const roles = ref([]);
 const loading = ref(false);
 const error = ref('');
 
@@ -27,7 +29,17 @@ async function load() {
     loading.value = false;
   }
 }
-onMounted(load);
+async function loadRoles() {
+  try {
+    roles.value = await fetchRoles();
+  } catch (e) {
+    error.value = e.message;
+  }
+}
+onMounted(() => {
+  load();
+  loadRoles();
+});
 
 function openCreate() {
   form.value = { email: '', name: '', password: '', role: 'user' };
@@ -104,8 +116,7 @@ async function remove(u) {
               :disabled="isSelf(u)"
               @change="changeRole(u, $event.target.value)"
             >
-              <option value="user">user</option>
-              <option value="admin">admin</option>
+              <option v-for="r in roles" :key="r.key" :value="r.key">{{ r.name }}</option>
             </select>
           </td>
           <td class="table__actions">
@@ -135,8 +146,7 @@ async function remove(u) {
         <label class="field">
           <span>Role</span>
           <select v-model="form.role" class="field__input">
-            <option value="user">user</option>
-            <option value="admin">admin</option>
+            <option v-for="r in roles" :key="r.key" :value="r.key">{{ r.name }}</option>
           </select>
         </label>
         <div class="modal__actions">
