@@ -46,6 +46,12 @@ const routes = [
     component: () => import('@/modules/settings/views/SettingsView.vue'),
     meta: { admin: true },
   },
+  {
+    path: '/admin/logs',
+    name: 'admin-logs',
+    component: () => import('@/modules/logs/views/LogsView.vue'),
+    meta: { admin: true },
+  },
 ];
 
 const router = createRouter({

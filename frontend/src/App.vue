@@ -55,6 +55,7 @@ function logout() {
           <RouterLink to="/admin/dashboard">📊 Dashboard</RouterLink>
           <RouterLink to="/admin/users">👥 Users</RouterLink>
           <RouterLink to="/admin/settings">⚙️ Settings</RouterLink>
+          <RouterLink to="/admin/logs">📋 Logs</RouterLink>
         </template>
       </nav>
 

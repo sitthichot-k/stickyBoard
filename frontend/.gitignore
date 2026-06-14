@@ -8,8 +8,8 @@ node_modules/
 dist/
 dist-ssr/
 
-# Logs
-logs/
+# Logs (anchored to root so it doesn't swallow src/modules/logs/)
+/logs/
 *.log
 npm-debug.log*
 
