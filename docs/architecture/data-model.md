@@ -9,7 +9,8 @@ note/connection/stroke references its sheet via `sheetId`.
 
 A separate `users` collection backs authentication, a `settings` collection
 holds admin-configurable key/value app settings, and a `logs` collection stores
-audit/event records (see below).
+audit/event records. Dynamic RBAC adds `roles` (groups) and `permissions` (the
+role × page matrix). See below.
 
 ## User
 
@@ -20,8 +21,36 @@ audit/event records (see below).
 | `email` | String | — | required, unique, lowercased |
 | `passwordHash` | String | — | bcrypt hash (never exposed in `toJSON`) |
 | `name` | String | `''` | display name |
-| `role` | enum user/admin | `user` | authorisation role |
+| `role` | String | `user` | references a `Role.key` (validated against the roles collection; custom roles allowed) |
 | `deletedAt` | Date | `null` | soft-delete marker |
+
+## Role
+
+`backend/src/modules/security/models/role.model.js` — a group users belong to.
+System roles (`admin`, `user`) always exist; admins can add custom roles.
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `key` | String | — | required, unique slug — referenced by `User.role` + permissions |
+| `name` | String | — | display name |
+| `description` | String | `''` | optional |
+| `isSystem` | Boolean | `false` | system roles can't be renamed/deleted |
+| `deletedAt` | Date | `null` | soft-delete marker |
+
+## Permission
+
+`backend/src/modules/security/models/permission.model.js` — one row per
+(role × page); the admin role is implicitly full-access and not stored.
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `roleKey` | String | — | the role this rule applies to |
+| `pageKey` | String | — | a page from the catalog (`backend/src/modules/security/catalog.js`) |
+| `granted` | [String] | `[]` | capabilities turned on: `view/edit/delete/action/owner/logs` |
+
+Unique on `{ roleKey, pageKey }`. Capabilities: `view/edit/delete/action`
+gate access; `owner` scopes a role to its own boards; `logs` toggles whether
+the page's requests are persisted to the logs.
 
 ## Setting
 
@@ -55,6 +84,7 @@ key/value app settings (upserted; no soft delete).
 | --- | --- | --- | --- |
 | `name` | String | — | required, max 120 chars |
 | `background` | enum dots/grid/blank | `dots` | canvas background style |
+| `ownerId` | ObjectId (ref User) | `null` | the creator — drives owner mode (null for pre-ownership data) |
 | `deletedAt` | Date | `null` | soft-delete marker |
 | `createdAt` / `updatedAt` | Date | — | from `timestamps` |
 

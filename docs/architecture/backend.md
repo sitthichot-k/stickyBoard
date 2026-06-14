@@ -23,12 +23,14 @@ controller/ + routes). Request flow: `routes → controller → service → mode
 Controllers never touch Mongoose directly; they call services. Cross-module
 imports are allowed (e.g. `auth` uses the `user` service).
 
-Modules: `health · auth · user · admin · sheet · note · connection · stroke`.
+Modules: `health · auth · user · admin · sheet · note · connection · stroke ·
+setting · log · security`.
 
 ## Bootstrapping (`routes/`)
 
-- `routes/server.js` — entry point: connects the DB, starts the HTTP server,
-  handles graceful shutdown (SIGINT/SIGTERM).
+- `routes/server.js` — entry point: connects the DB, starts the HTTP server
+  (also ensures the system roles + default permission matrix and starts log
+  cleanup), handles graceful shutdown (SIGINT/SIGTERM).
 - `routes/app.js` — assembles the Express app: a request logger, CORS, JSON body
   parsing, mounts the API under `/api/v1`, then the 404 + error middleware.
 - `routes/routes.js` — aggregator: mounts every module router with the right
@@ -57,9 +59,31 @@ Feature services compose it instead of re-implementing CRUD. See
 
 Login-only (no public sign-up). `POST /auth/login` verifies a bcrypt password and
 returns a JWT; `middleware/auth.js` exposes `requireAuth` (verifies the bearer
-token → `req.user`) and `requireAdmin` (role check). Data routes are mounted
-behind `requireAuth` in `routes/routes.js`; admin routes also use `requireAdmin`.
-Config lives in `config/env.js` (`jwt.secret`, `jwt.expiresIn`, seed admin).
+token → `req.user`) and `requireAdmin` (role check, used only for the sensitive
+`/security` config surface). Data routes are mounted behind `requireAuth` in
+`routes/routes.js`. Config lives in `config/env.js` (`jwt.secret`,
+`jwt.expiresIn`, seed admin).
+
+## Authorisation — dynamic RBAC (`security` module)
+
+Access is data-driven, not hardcoded. The `security` module owns a `Role`
+collection (system roles `admin`/`user` + custom roles) and a `Permission`
+collection — one row per role × page holding a `granted` list of capabilities
+(`view/edit/delete/action/owner/logs`). A static page catalogue
+(`security/catalog.js`) maps Vue route names and API path prefixes to pages.
+
+- `middleware/permission.js` `requirePermission(page, capability)` gates each
+  route via the matrix; the **admin role always passes**.
+- **Owner mode** — when a role has the `owner` capability on the boards page, the
+  sheet list/getOne scope to `Sheet.ownerId` (a user only sees boards they made);
+  board notes/arrows/strokes inherit this since they need a reachable `sheetId`.
+- **Logs capability** — `middleware/logger.js` only persists a request when the
+  acting role has `logs` on the request's page (health + the log endpoint stay
+  always-skipped).
+- On boot the server ensures the system roles and seeds the default matrix once
+  (idempotent), so a fresh DB works without `npm run seed`.
+- `/auth/login` + `/auth/me` return the role's resolved `permissions` map so the
+  SPA can drive its guards and sidebar.
 
 ## Feature modules
 

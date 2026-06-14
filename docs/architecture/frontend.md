@@ -22,7 +22,8 @@ frontend/src/
 
 Modules:
 
-- **auth** — `LoginView`, auth store (token + current user), auth api.
+- **auth** — `LoginView`, `NoAccessView`, auth store (token + current user +
+  resolved `permissions`, with `can`/`canAccess` helpers), auth api.
 - **board** — `SheetsView`, `BoardView`, `StickyNote`; sheets + notes stores
   (notes/connections/strokes/undo-redo); sheets/notes/connections/strokes api.
 - **admin** — `UsersView` (manage users), `DashboardView` (KPIs + SVG charts),
@@ -30,11 +31,18 @@ Modules:
 - **settings** — `SettingsView` (admin) + a settings store; drives the
   site-wide announcement banner in `App.vue`.
 - **logs** — `LogsView` (admin): paginated event log with level/search filters.
+- **security** — `SecurityView` (admin): the Permission Matrix — pick a group
+  (role), toggle each page's capabilities, and manage custom roles; security api.
 - **tools** — `MergePdfView`, `ScanPdfView` (client-side, standalone).
 
 ## Shell & theming (`App.vue`)
 
-- **Sidebar** holds the brand wordmark and navigation.
+- **Sidebar** holds the brand wordmark and navigation. Nav items come from a
+  config filtered by `auth.canAccess(page)`, so menus appear/disappear with the
+  permission matrix (empty groups are hidden).
+- **Route guards** — each route declares `meta.page`; the global guard checks
+  `auth.canAccess` (admin always passes) and falls back to the boards page, or
+  `NoAccessView` if the role can't open anything.
 - **Theme toggle** (top-right) switches light/dark; the choice is persisted to
   `localStorage` and applied to `<html data-theme>` before paint.
 - All colours come from CSS variables in `styles/tokens.css` (incl. a dynamic

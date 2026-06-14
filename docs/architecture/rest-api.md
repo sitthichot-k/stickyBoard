@@ -20,33 +20,57 @@ an admin). Protected endpoints need an `Authorization: Bearer <token>` header.
 
 | Method | Path | Description |
 | --- | --- | --- |
-| POST | `/api/v1/auth/login` | body `{ email, password }` → `{ token, user }` (JWT) |
-| GET | `/api/v1/auth/me` | current user (requires token) |
+| POST | `/api/v1/auth/login` | body `{ email, password }` → `{ token, user }` (JWT; `user` includes its role `permissions`) |
+| GET | `/api/v1/auth/me` | current user + resolved `permissions` (requires token) |
 
 `health` and `auth/login` are public; **all other endpoints below require a
-valid token**, and admin-only endpoints additionally require the `admin` role
-(`401` without a token, `403` without the role).
+valid token**. Access is then governed by the **permission matrix** (see
+Security): each route declares a page + capability, and the user's role must
+grant it (`401` without a token, `403` without the capability). The `admin` role
+always passes. A user's `role` references the roles collection (custom roles
+allowed), not a fixed enum.
 
-## Admin (admin role required)
+## Admin
+
+Gated by the permission matrix (pages `admin-dashboard` / `admin-users`).
+
+| Method | Path | Capability | Description |
+| --- | --- | --- | --- |
+| GET | `/api/v1/admin/stats` | dashboard·view | analytics — counts, top sheets, 14-day activity |
+| GET | `/api/v1/admin/users` | users·view | list users |
+| POST | `/api/v1/admin/users` | users·edit | create a user — body `{ email, password, name?, role? }` |
+| PATCH | `/api/v1/admin/users/:id/role` | users·edit | set a user's role — body `{ role }` |
+| DELETE | `/api/v1/admin/users/:id` | users·delete | soft-delete a user → `204` |
+
+Admins can't change their own role or delete their own account.
+
+## Logs
+
+| Method | Path | Capability | Description |
+| --- | --- | --- | --- |
+| GET | `/api/v1/logs` | logs·view | event logs — paginated, filter by `?level=&action=&search=` |
+
+## Security (admin-only)
+
+Manages the dynamic RBAC config; mounted hard behind the `admin` role.
 
 | Method | Path | Description |
 | --- | --- | --- |
-| GET | `/api/v1/admin/stats` | dashboard analytics — counts, top sheets, 14-day activity |
-| GET | `/api/v1/logs` | event logs — paginated, filter by `?level=&action=&search=` |
-| GET | `/api/v1/admin/users` | list users |
-| POST | `/api/v1/admin/users` | create a user — body `{ email, password, name?, role? }` |
-| PATCH | `/api/v1/admin/users/:id/role` | set a user's role — body `{ role }` |
-| DELETE | `/api/v1/admin/users/:id` | soft-delete a user → `204` |
-
-Admins can't change their own role or delete their own account.
+| GET | `/api/v1/security/catalog` | pages + capability columns for the matrix |
+| GET | `/api/v1/security/roles` | list roles (system + custom) |
+| POST | `/api/v1/security/roles` | create a custom role — body `{ name, key?, description? }` |
+| PATCH | `/api/v1/security/roles/:key` | rename / describe (system roles rejected) |
+| DELETE | `/api/v1/security/roles/:key` | delete a custom role + its rules → `204` |
+| GET | `/api/v1/security/matrix?role=:key` | the role's matrix `{ role, rows: [{ pageKey, granted }] }` |
+| PUT | `/api/v1/security/matrix` | set one cell — body `{ roleKey, pageKey, granted: [...] }` (admin role rejected) |
 
 ## Settings
 
 | Method | Path | Description |
 | --- | --- | --- |
 | GET | `/api/v1/settings` | public settings for any signed-in user (e.g. the announcement banner) |
-| GET | `/api/v1/settings/all` | all settings (admin) |
-| PUT | `/api/v1/settings/:key` | update one whitelisted setting (admin) — body `{ value }` |
+| GET | `/api/v1/settings/all` | all settings (capability `admin-settings·view`) |
+| PUT | `/api/v1/settings/:key` | update one whitelisted setting (`admin-settings·edit`) — body `{ value }` |
 
 ## Health
 

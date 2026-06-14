@@ -205,13 +205,15 @@ Admin-configurable app settings (no code change to update).
 
 ### 3.18 Security (dynamic RBAC) — `Feature: Security`
 
-Custom roles + a page/action permission matrix, editable from the UI.
+Custom roles + a page/capability permission matrix, editable from the UI.
 
 | FR | Requirement | Status |
 | --- | --- | --- |
-| FR-SEC-001 | Roles are data (custom roles allowed); each role has a set of permission keys from a fixed catalog (pages + key actions). | ⬜ |
-| FR-SEC-002 | Backend `requirePermission(key)` and frontend guards/sidebar consult the matrix (admin role keeps full access). | ⬜ |
-| FR-SEC-003 | Admin Security page: manage roles and toggle the permission matrix. | ⬜ |
+| FR-SEC-001 | Roles are data (custom roles allowed); each role × page holds a set of capabilities from a fixed catalog (view/edit/delete/action/owner/logs). | ✅ |
+| FR-SEC-002 | Backend `requirePermission(page, capability)` and frontend guards/sidebar consult the matrix (admin role keeps full access). | ✅ |
+| FR-SEC-003 | Admin Permission Matrix page: manage roles and toggle capabilities; assign users to any role. | ✅ |
+| FR-SEC-004 | **Owner** mode: an owner-scoped role only sees boards it created (`Sheet.ownerId`). | ✅ |
+| FR-SEC-005 | **Logs** capability: per page × role toggle for whether requests are persisted to the logs. | ✅ |
 
 ## 4. Non-functional requirements
 
