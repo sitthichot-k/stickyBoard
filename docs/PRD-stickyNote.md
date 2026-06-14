@@ -186,6 +186,33 @@ Admin-only analytics overview.
 > Build order: PDF tools (FR-PDF / FR-SCAN) first, then auth-gated admin
 > features (FR-ADMIN / FR-DASH). See the roadmap discussion.
 
+### 3.16 Settings — `Feature: Settings`
+
+Admin-configurable app settings (no code change to update).
+
+| FR | Requirement | Status |
+| --- | --- | --- |
+| FR-SET-001 | Generic key/value settings with defaults; `GET /settings` exposes public ones (e.g. a banner) to any signed-in user. | 🟡 |
+| FR-SET-002 | Admin can view all settings (`GET /settings/all`) and update one (`PUT /settings/:key`). | 🟡 |
+| FR-SET-003 | Admin Settings page; the site-wide announcement banner reflects the setting. | ⬜ |
+
+### 3.17 Logs — `Feature: Logs`
+
+| FR | Requirement | Status |
+| --- | --- | --- |
+| FR-LOG-001 | Persist event logs (auth, user/settings/security changes) with actor + metadata. | ⬜ |
+| FR-LOG-002 | Admin Logs page: list + filter. | ⬜ |
+
+### 3.18 Security (dynamic RBAC) — `Feature: Security`
+
+Custom roles + a page/action permission matrix, editable from the UI.
+
+| FR | Requirement | Status |
+| --- | --- | --- |
+| FR-SEC-001 | Roles are data (custom roles allowed); each role has a set of permission keys from a fixed catalog (pages + key actions). | ⬜ |
+| FR-SEC-002 | Backend `requirePermission(key)` and frontend guards/sidebar consult the matrix (admin role keeps full access). | ⬜ |
+| FR-SEC-003 | Admin Security page: manage roles and toggle the permission matrix. | ⬜ |
+
 ## 4. Non-functional requirements
 
 | NFR | Requirement |

@@ -6,6 +6,7 @@ import noteRoutes from '../modules/note/note.routes.js';
 import connectionRoutes from '../modules/connection/connection.routes.js';
 import strokeRoutes from '../modules/stroke/stroke.routes.js';
 import adminRoutes from '../modules/admin/admin.routes.js';
+import settingRoutes from '../modules/setting/setting.routes.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
@@ -19,6 +20,7 @@ router.use('/sheets', requireAuth, sheetRoutes);
 router.use('/notes', requireAuth, noteRoutes);
 router.use('/connections', requireAuth, connectionRoutes);
 router.use('/strokes', requireAuth, strokeRoutes);
+router.use('/settings', settingRoutes); // mixed access — guards are per-route
 
 // Admin-only.
 router.use('/admin', requireAuth, requireAdmin, adminRoutes);
