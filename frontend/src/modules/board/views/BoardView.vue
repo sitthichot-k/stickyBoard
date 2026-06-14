@@ -788,48 +788,6 @@ function onMiniUp(e) {
   text-decoration: none;
   line-height: 1;
 }
-@media (max-width: 768px) {
-  /* clear the hamburger menu button (top-left) */
-  .board-info {
-    left: 64px;
-  }
-}
-
-/* Narrow screens: stack the toolbars vertically in the bottom corners. */
-@media (max-width: 640px) {
-  .minimap {
-    display: none; /* too large for phones */
-  }
-  .toolbox {
-    flex-direction: column;
-    left: auto;
-    right: var(--space-3);
-    bottom: var(--space-3);
-    transform: none;
-  }
-  .toolbox__sep {
-    width: 22px;
-    height: 1px;
-    margin: var(--space-1) 0;
-  }
-  .toolbox__add-label {
-    display: none;
-  }
-  .drawbar {
-    flex-direction: column;
-    left: var(--space-3);
-    right: auto;
-    bottom: var(--space-3);
-    transform: none;
-  }
-  .drawbar__sep {
-    width: 22px;
-    height: 1px;
-  }
-  .drawbar__slider {
-    width: 64px;
-  }
-}
 .board {
   position: absolute;
   inset: 0;
@@ -1156,5 +1114,55 @@ function onMiniUp(e) {
 }
 .toolbox__add-label {
   font-size: var(--font-size-sm);
+}
+
+/* ---- Responsive overrides ----
+   Placed last so they win over the base rules above (media queries don't add
+   specificity, so at equal specificity the later rule wins). */
+@media (max-width: 768px) {
+  /* clear the hamburger menu button (top-left) */
+  .board-info {
+    left: 64px;
+  }
+}
+
+/* Narrow screens: stack the toolbars vertically in the bottom corners,
+   keeping the buttons the same compact square size. */
+@media (max-width: 640px) {
+  .toolbox {
+    flex-direction: column;
+    left: auto;
+    right: var(--space-3);
+    bottom: var(--space-3);
+    transform: none;
+  }
+  .toolbox__btn {
+    min-width: 0;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+  }
+  .toolbox__sep {
+    width: 22px;
+    height: 1px;
+    margin: var(--space-1) 0;
+  }
+  .toolbox__add-label {
+    display: none;
+  }
+  .drawbar {
+    flex-direction: column;
+    left: var(--space-3);
+    right: auto;
+    bottom: var(--space-3);
+    transform: none;
+  }
+  .drawbar__sep {
+    width: 22px;
+    height: 1px;
+  }
+  .drawbar__slider {
+    width: 64px;
+  }
 }
 </style>
