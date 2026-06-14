@@ -39,6 +39,14 @@ valid token**, and admin-only endpoints additionally require the `admin` role
 
 Admins can't change their own role or delete their own account.
 
+## Settings
+
+| Method | Path | Description |
+| --- | --- | --- |
+| GET | `/api/v1/settings` | public settings for any signed-in user (e.g. the announcement banner) |
+| GET | `/api/v1/settings/all` | all settings (admin) |
+| PUT | `/api/v1/settings/:key` | update one whitelisted setting (admin) — body `{ value }` |
+
 ## Health
 
 | Method | Path | Description |

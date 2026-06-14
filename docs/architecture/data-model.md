@@ -7,7 +7,8 @@ use Mongoose `timestamps` and a `toJSON` transform that exposes `id` (instead of
 A **sheet** is a board that owns its notes, arrows, and drawings. Every
 note/connection/stroke references its sheet via `sheetId`.
 
-A separate `users` collection backs authentication (see below).
+A separate `users` collection backs authentication, and a `settings` collection
+holds admin-configurable key/value app settings (see below).
 
 ## User
 
@@ -20,6 +21,16 @@ A separate `users` collection backs authentication (see below).
 | `name` | String | `''` | display name |
 | `role` | enum user/admin | `user` | authorisation role |
 | `deletedAt` | Date | `null` | soft-delete marker |
+
+## Setting
+
+`backend/src/modules/setting/models/setting.model.js` — admin-configurable
+key/value app settings (upserted; no soft delete).
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `key` | String | — | required, unique (e.g. `announcement`) |
+| `value` | Mixed | `{}` | merged with code defaults on read |
 
 ## Sheet
 

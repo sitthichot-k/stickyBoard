@@ -27,6 +27,8 @@ Modules:
   (notes/connections/strokes/undo-redo); sheets/notes/connections/strokes api.
 - **admin** — `UsersView` (manage users), `DashboardView` (KPIs + SVG charts),
   admin api.
+- **settings** — `SettingsView` (admin) + a settings store; drives the
+  site-wide announcement banner in `App.vue`.
 - **tools** — `MergePdfView`, `ScanPdfView` (client-side, standalone).
 
 ## Shell & theming (`App.vue`)
