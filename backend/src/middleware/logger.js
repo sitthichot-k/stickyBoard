@@ -1,3 +1,6 @@
+import { loggerConfig } from '../config/logger.js';
+import { recordLog } from '../modules/log/service/log.service.js';
+
 // Human-readable label per HTTP status (extend as needed).
 const STATUS_LABEL = {
   200: 'success',
@@ -37,6 +40,17 @@ export function requestLogger(req, res, next) {
     if (statusCode >= 500) console.error(line);
     else if (statusCode >= 400) console.warn(line);
     else console.log(line);
+
+    // Persist every API request as a DB log (configurable; skips noisy paths).
+    if (loggerConfig.logApiTraffic && !loggerConfig.skipPaths.some((p) => req.originalUrl.startsWith(p))) {
+      recordLog({
+        level: statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info',
+        action: 'api.request',
+        message: `${req.method} ${req.originalUrl} → ${statusCode}`,
+        userId: req.user?.id ?? null,
+        meta: { method: req.method, path: req.originalUrl, status: statusCode, ms },
+      });
+    }
   });
   next();
 }

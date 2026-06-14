@@ -43,6 +43,8 @@ services:
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@example.com}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-admin1234}
+      LOG_API_TRAFFIC: ${LOG_API_TRAFFIC:-true}
+      LOG_RETENTION_DAYS: ${LOG_RETENTION_DAYS:-30}
     # nodemon with -L (legacy/polling watch) — required for Windows bind mounts.
     command: ["npx", "nodemon", "-L", "src/routes/server.js"]
     volumes:
