@@ -41,8 +41,13 @@ export function requestLogger(req, res, next) {
     else if (statusCode >= 400) console.warn(line);
     else console.log(line);
 
-    // Persist every API request as a DB log (configurable; skips noisy paths).
-    if (loggerConfig.logApiTraffic && !loggerConfig.skipPaths.some((p) => req.originalUrl.startsWith(p))) {
+    // Persist every API request as a DB log (configurable; skips CORS preflight
+    // and noisy paths).
+    if (
+      loggerConfig.logApiTraffic &&
+      req.method !== 'OPTIONS' &&
+      !loggerConfig.skipPaths.some((p) => req.originalUrl.startsWith(p))
+    ) {
       recordLog({
         level: statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info',
         action: 'api.request',
