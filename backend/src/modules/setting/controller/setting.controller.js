@@ -1,5 +1,6 @@
 import * as service from '../service/setting.service.js';
 import * as runtime from '../service/runtime.service.js';
+import * as mail from '../service/mail.service.js';
 import { getBlocked, unblock } from '../../../middleware/rateLimit.js';
 import { recordLog } from '../../log/service/log.service.js';
 
@@ -76,6 +77,38 @@ export async function updateRuntime(req, res, next) {
     res.json(next);
   } catch (err) {
     next(err);
+  }
+}
+
+// ---- SMTP config (Config page) — password is write-only + encrypted at rest ----
+
+export function getMail(req, res) {
+  res.json(mail.getMailConfigMasked()); // never includes the password
+}
+
+export async function updateMail(req, res, next) {
+  try {
+    const result = await mail.setMailConfig(req.body ?? {});
+    recordLog({
+      level: 'warn',
+      action: 'mail.update',
+      message: 'SMTP config changed',
+      userId: req.user.id,
+      userEmail: req.user.email,
+      meta: { host: result.host, user: result.user, from: result.from, hasPassword: result.hasPassword },
+    });
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function testMail(req, res) {
+  try {
+    await mail.sendTestMail(req.user.email);
+    res.json({ ok: true, sentTo: req.user.email });
+  } catch (err) {
+    res.status(400).json({ error: `Test failed: ${err.message}` });
   }
 }
 

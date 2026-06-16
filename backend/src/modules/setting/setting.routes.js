@@ -16,6 +16,11 @@ router.put('/runtime', requireAuth, requirePermission('admin-config', 'edit'), c
 router.get('/runtime/blocked', requireAuth, requirePermission('admin-config', 'view'), controller.blockedList);
 router.delete('/runtime/blocked/:key', requireAuth, requirePermission('admin-config', 'action'), controller.unblockIp);
 
+// SMTP config (password never returned; write-only + encrypted at rest).
+router.get('/mail', requireAuth, requirePermission('admin-config', 'view'), controller.getMail);
+router.put('/mail', requireAuth, requirePermission('admin-config', 'edit'), controller.updateMail);
+router.post('/mail/test', requireAuth, requirePermission('admin-config', 'action'), controller.testMail);
+
 router.put('/:key', requireAuth, requirePermission('admin-settings', 'edit'), controller.update);
 
 export default router;

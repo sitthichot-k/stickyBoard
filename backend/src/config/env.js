@@ -30,6 +30,9 @@ export const env = {
     pass: process.env.SMTP_PASS ?? '',
     from: process.env.MAIL_FROM ?? 'Sticky Board <no-reply@stickyboard.local>',
   },
+  // Key used to encrypt secrets at rest (SMTP password). Falls back to the JWT
+  // secret if unset — set a dedicated value in production.
+  mailSecret: process.env.MAIL_SECRET ?? '',
 };
 
 export const isProduction = env.nodeEnv === 'production';

@@ -61,7 +61,7 @@ export const PAGES = [
     label: 'Config',
     path: '/admin/config',
     group: 'Admin',
-    apiPrefixes: ['/api/v1/settings/runtime'],
+    apiPrefixes: ['/api/v1/settings/runtime', '/api/v1/settings/mail'],
   },
   {
     key: 'admin-logs',

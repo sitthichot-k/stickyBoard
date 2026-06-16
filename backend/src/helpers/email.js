@@ -1,35 +1,7 @@
-import nodemailer from 'nodemailer';
-import { env } from '../config/env.js';
+import { sendMail } from '../modules/setting/service/mail.service.js';
 
-let transport = null;
-
-function getTransport() {
-  if (transport) return transport;
-  if (env.mail.host) {
-    transport = nodemailer.createTransport({
-      host: env.mail.host,
-      port: env.mail.port,
-      secure: env.mail.secure,
-      auth: env.mail.user ? { user: env.mail.user, pass: env.mail.pass } : undefined,
-    });
-  } else {
-    // No SMTP configured → capture the message instead of sending (dev/template).
-    transport = nodemailer.createTransport({ jsonTransport: true });
-  }
-  return transport;
-}
-
-export async function sendMail({ to, subject, html, text }) {
-  try {
-    await getTransport().sendMail({ from: env.mail.from, to, subject, html, text });
-    if (!env.mail.host) {
-      // Surface the link so dev/template users can complete the flow without SMTP.
-      console.log(`[email] (no SMTP — not sent) to=${to} · ${subject}\n[email] ${text}`);
-    }
-  } catch (err) {
-    console.error('[email] send failed:', err.message);
-  }
-}
+// Email templates. Transport + SMTP config live in mail.service (admin-managed,
+// encrypted at rest); this layer just renders + hands off to sendMail.
 
 export function sendVerifyEmail(to, link) {
   return sendMail({
