@@ -237,6 +237,15 @@ belong to infra monitoring).
 | FR-AUTH-002 | Email verification (one-time TTL token); login can require it via `requireEmailVerified` (admins exempt). | ✅ |
 | FR-AUTH-003 | Password reset (forgot → emailed token → reset). | ✅ |
 | FR-AUTH-004 | Account page: update profile + change password (verifies current). | ✅ |
+| FR-AUTH-005 | Registration rejects fake/disposable emails; self-signups must verify before login. | ✅ |
+
+### 3.21 Notifications — `Feature: Notification`
+
+| FR | Requirement | Status |
+| --- | --- | --- |
+| FR-NOTI-001 | Code-defined event catalog; admin-editable email templates with placeholders. | ✅ |
+| FR-NOTI-002 | Matrix maps each action → template + on/off; modules call `notify()` (no hardcoded emails). | ✅ |
+| FR-NOTI-003 | System emails (verify/reset) always send, template chosen in Config; seed-defaults with preview. | ✅ |
 
 ## 4. Non-functional requirements
 

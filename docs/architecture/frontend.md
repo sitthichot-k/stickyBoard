@@ -35,8 +35,11 @@ Modules:
   site-wide announcement banner in `App.vue`.
 - **config** — `ConfigView` (admin): runtime toggles (rate limiting, traffic
   logging, registration, email-verification, log retention), an admin-managed
-  SMTP section (write-only password, send-test), and a blocked-caller monitor
-  with manual unblock.
+  SMTP section (write-only password, send-test), a **System emails** section
+  (template for the always-on verify/reset), and a blocked-caller monitor.
+- **notification** — `NotificationTemplatesView` (CRUD + seed-defaults) and
+  `NotificationMatrixView` (pick a page → toggle each action + choose a
+  template); notification api.
 - **logs** — `LogsView` (admin): paginated event log with level/search filters;
   rows expand to show `meta` (e.g. an `app.error` stack trace).
 - **security** — `SecurityView` (admin): the Permission Matrix — pick a group

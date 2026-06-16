@@ -74,6 +74,22 @@ Manages the dynamic RBAC config; mounted hard behind the `admin` role.
 | GET | `/api/v1/security/matrix?role=:key` | the role's matrix `{ role, rows: [{ pageKey, granted }] }` |
 | PUT | `/api/v1/security/matrix` | set one cell — body `{ roleKey, pageKey, granted: [...] }` (admin role rejected) |
 
+## Notifications (capability `admin-notifications`)
+
+Email templates + the event→template matrix. Modules call `notify(eventKey, …)`
+instead of hardcoding emails.
+
+| Method | Path | Description |
+| --- | --- | --- |
+| GET | `/api/v1/notifications/templates` | list templates |
+| POST | `/api/v1/notifications/templates` | create — body `{ name, subject?, body?, description?, key? }` |
+| PATCH | `/api/v1/notifications/templates/:key` | edit a template |
+| DELETE | `/api/v1/notifications/templates/:key` | delete a template → `204` |
+| GET | `/api/v1/notifications/matrix` | every catalog event with `{ enabled, templateKey, page, recipient, system, vars }` |
+| PUT | `/api/v1/notifications/matrix` | set one event — body `{ eventKey, enabled?, templateKey? }` (system events stay enabled) |
+| GET | `/api/v1/notifications/seed-defaults/preview` | per-event status (`new`/`default`/`edited`/`deleted`) for the reset warning |
+| POST | `/api/v1/notifications/seed-defaults` | reset catalog events' templates + rules to defaults (un-deletes via `deletedAt:null`) |
+
 ## Settings
 
 | Method | Path | Description |

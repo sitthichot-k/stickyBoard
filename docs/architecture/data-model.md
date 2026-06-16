@@ -66,6 +66,30 @@ Unique on `{ roleKey, pageKey }`. Capabilities: `view/edit/delete/action`
 gate access; `owner` scopes a role to its own boards; `logs` toggles whether
 the page's requests are persisted to the logs.
 
+## NotificationTemplate
+
+`backend/src/modules/notification/models/template.model.js` — a reusable email
+template; `subject`/`body` may contain `{{placeholders}}`.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `key` | String | required, unique slug |
+| `name` | String | display name |
+| `subject` / `body` | String | rendered with the event's vars at send time |
+| `description` | String | optional |
+| `deletedAt` | Date | soft-delete (a seed-defaults reset clears it to restore) |
+
+## NotificationRule
+
+`backend/src/modules/notification/models/rule.model.js` — one row per catalog
+event (`backend/src/modules/notification/catalog.js`).
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `eventKey` | String | required, unique — the catalog event |
+| `enabled` | Boolean | whether the event sends (system events always send) |
+| `templateKey` | String | which template to render |
+
 ## Setting
 
 `backend/src/modules/setting/models/setting.model.js` — admin-configurable

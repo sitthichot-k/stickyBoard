@@ -24,7 +24,7 @@ Controllers never touch Mongoose directly; they call services. Cross-module
 imports are allowed (e.g. `auth` uses the `user` service).
 
 Modules: `health · auth · user · admin · sheet · note · connection · stroke ·
-setting · log · security`.
+setting · log · security · notification`.
 
 ## Bootstrapping (`routes/`)
 
@@ -90,6 +90,21 @@ collection — one row per role × page holding a `granted` list of capabilities
   (idempotent), so a fresh DB works without `npm run seed`.
 - `/auth/login` + `/auth/me` return the role's resolved `permissions` map so the
   SPA can drive its guards and sidebar.
+
+## Notifications (`notification` module)
+
+Outbound emails are data-driven, not hardcoded. A code `catalog.js` lists the
+**events** (page/action, recipient `user`/`admins`, `system` flag, placeholder
+`vars`, built-in default), `NotificationTemplate` holds editable wording, and
+`NotificationRule` maps each event → `{ enabled, templateKey }`.
+
+- `notify(eventKey, { vars, to })` renders the chosen template (or the catalog
+  default for system events) and sends via the SMTP service to the resolved
+  recipient. Auth (verify/reset/welcome/password-changed) and admin
+  (user-created/role-changed) call it instead of building emails inline.
+- `system` events (verify/reset) always send; the rest are opt-in via the matrix.
+- An admin **seed-defaults** action resets catalog events to their defaults (with
+  a preview of what would be overwritten).
 
 ## Feature modules
 
