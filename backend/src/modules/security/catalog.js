@@ -64,6 +64,13 @@ export const PAGES = [
     apiPrefixes: ['/api/v1/settings/runtime', '/api/v1/settings/mail'],
   },
   {
+    key: 'admin-notifications',
+    label: 'Notifications',
+    path: '/admin/notifications',
+    group: 'Admin',
+    apiPrefixes: ['/api/v1/notifications'],
+  },
+  {
     key: 'admin-logs',
     label: 'Logs',
     path: '/admin/logs',

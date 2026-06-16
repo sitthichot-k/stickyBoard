@@ -5,6 +5,7 @@ import { createBaseService } from '../../../helpers/base.service.js';
 const base = createBaseService(User, { searchableFields: ['email', 'name'] });
 
 export const listUsers = () => User.find({ deletedAt: null }).sort({ createdAt: -1 });
+export const listAdminEmails = () => User.find({ role: 'admin', deletedAt: null }).distinct('email');
 export const getUser = (id) => base.searchOne(id);
 export const deleteUser = (id) => base.delete(id);
 

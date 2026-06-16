@@ -9,6 +9,7 @@ import adminRoutes from '../modules/admin/admin.routes.js';
 import settingRoutes from '../modules/setting/setting.routes.js';
 import logRoutes from '../modules/log/log.routes.js';
 import securityRoutes from '../modules/security/security.routes.js';
+import notificationRoutes from '../modules/notification/notification.routes.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
@@ -29,5 +30,6 @@ router.use('/settings', settingRoutes); // mixed access — guards are per-route
 router.use('/admin', requireAuth, adminRoutes);
 router.use('/logs', requireAuth, logRoutes);
 router.use('/security', requireAuth, requireAdmin, securityRoutes);
+router.use('/notifications', notificationRoutes); // per-route requirePermission inside
 
 export default router;
