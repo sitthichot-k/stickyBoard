@@ -66,8 +66,72 @@ const fmtRemaining = (ms) => {
   return m ? `${m}m ${s}s` : `${s}s`;
 };
 
+// ---- SMTP (password is write-only — never returned) ----
+const mail = ref(null);
+const mailDraft = ref({ host: '', port: 587, secure: false, user: '', from: '', pass: '' });
+const mailSaving = ref(false);
+const testing = ref(false);
+const mailMsg = ref('');
+const mailErr = ref('');
+
+async function loadMail() {
+  try {
+    mail.value = await api.fetchMail();
+    mailDraft.value = {
+      host: mail.value.host || '',
+      port: mail.value.port || 587,
+      secure: !!mail.value.secure,
+      user: mail.value.user || '',
+      from: mail.value.from || '',
+      pass: '',
+    };
+  } catch (e) {
+    mailErr.value = e.message;
+  }
+}
+
+async function saveMail() {
+  if (mailSaving.value) return;
+  mailSaving.value = true;
+  mailMsg.value = '';
+  mailErr.value = '';
+  try {
+    const patch = {
+      host: mailDraft.value.host,
+      port: Number(mailDraft.value.port) || 587,
+      secure: mailDraft.value.secure,
+      user: mailDraft.value.user,
+      from: mailDraft.value.from,
+    };
+    if (mailDraft.value.pass) patch.pass = mailDraft.value.pass; // only send when typed
+    mail.value = await api.updateMail(patch);
+    mailDraft.value.pass = '';
+    mailMsg.value = 'SMTP settings saved.';
+  } catch (e) {
+    mailErr.value = e.message;
+  } finally {
+    mailSaving.value = false;
+  }
+}
+
+async function runTest() {
+  if (testing.value) return;
+  testing.value = true;
+  mailMsg.value = '';
+  mailErr.value = '';
+  try {
+    const r = await api.testMail();
+    mailMsg.value = `Test email sent to ${r.sentTo}.`;
+  } catch (e) {
+    mailErr.value = e.message;
+  } finally {
+    testing.value = false;
+  }
+}
+
 onMounted(() => {
   load();
+  loadMail();
   loadBlocked();
   timer = setInterval(loadBlocked, 10000); // refresh the monitor
 });
@@ -120,6 +184,36 @@ onUnmounted(() => clearInterval(timer));
 
         <div class="row">
           <div class="row__text">
+            <strong>Allow registration</strong>
+            <span class="text-muted">Let visitors create their own account.</span>
+          </div>
+          <button
+            class="switch"
+            :class="{ on: rt.allowRegistration }"
+            :disabled="saving === 'allowRegistration'"
+            role="switch"
+            :aria-checked="rt.allowRegistration"
+            @click="toggle('allowRegistration')"
+          />
+        </div>
+
+        <div class="row">
+          <div class="row__text">
+            <strong>Require email verification</strong>
+            <span class="text-muted">Block sign-in until the email is verified (admins exempt).</span>
+          </div>
+          <button
+            class="switch"
+            :class="{ on: rt.requireEmailVerified }"
+            :disabled="saving === 'requireEmailVerified'"
+            role="switch"
+            :aria-checked="rt.requireEmailVerified"
+            @click="toggle('requireEmailVerified')"
+          />
+        </div>
+
+        <div class="row">
+          <div class="row__text">
             <strong>Log retention</strong>
             <span class="text-muted">Auto-delete logs older than this (1–365 days).</span>
           </div>
@@ -134,6 +228,59 @@ onUnmounted(() => clearInterval(timer));
               Save
             </BaseButton>
           </div>
+        </div>
+      </section>
+
+      <section v-if="mail" class="panel">
+        <h2 class="panel__title">Email (SMTP)</h2>
+        <p class="text-muted note">
+          Leave the host empty to log emails to the server console (dev). The
+          password is write-only and stored encrypted.
+        </p>
+
+        <BaseAlert v-if="mailErr" variant="danger">{{ mailErr }}</BaseAlert>
+        <BaseAlert v-else-if="mailMsg" variant="success">{{ mailMsg }}</BaseAlert>
+
+        <div class="mail-grid">
+          <label class="mfield mfield--wide">
+            <span>Host</span>
+            <input v-model="mailDraft.host" class="control control--full" placeholder="smtp.example.com" />
+          </label>
+          <label class="mfield">
+            <span>Port</span>
+            <input v-model.number="mailDraft.port" type="number" class="control control--full" />
+          </label>
+          <label class="mfield mfield--check">
+            <input v-model="mailDraft.secure" type="checkbox" />
+            <span>TLS (secure)</span>
+          </label>
+          <label class="mfield">
+            <span>Username</span>
+            <input v-model="mailDraft.user" class="control control--full" autocomplete="off" />
+          </label>
+          <label class="mfield">
+            <span>Password</span>
+            <input
+              v-model="mailDraft.pass"
+              type="password"
+              class="control control--full"
+              autocomplete="new-password"
+              :placeholder="mail.hasPassword ? '•••••• (set — leave blank to keep)' : 'not set'"
+            />
+          </label>
+          <label class="mfield mfield--wide">
+            <span>From</span>
+            <input v-model="mailDraft.from" class="control control--full" placeholder="Name <no-reply@example.com>" />
+          </label>
+        </div>
+
+        <div class="mail-actions">
+          <BaseButton :disabled="mailSaving" @click="saveMail">
+            {{ mailSaving ? 'Saving…' : 'Save SMTP' }}
+          </BaseButton>
+          <BaseButton variant="ghost" :disabled="testing" @click="runTest">
+            {{ testing ? 'Sending…' : 'Send test email' }}
+          </BaseButton>
         </div>
       </section>
 
@@ -237,6 +384,47 @@ onUnmounted(() => clearInterval(timer));
 }
 .control:focus {
   outline: 2px solid var(--color-primary);
+}
+.control--full {
+  width: 100%;
+}
+.note {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-sm);
+}
+.mail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+.mfield {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mfield > span {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+.mfield--wide {
+  grid-column: 1 / -1;
+}
+.mfield--check {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+  align-self: end;
+  padding-bottom: var(--space-2);
+}
+.mail-actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+@media (max-width: 560px) {
+  .mail-grid {
+    grid-template-columns: 1fr;
+  }
 }
 /* toggle switch */
 .switch {
