@@ -5,7 +5,7 @@ import { recordLog } from '../../log/service/log.service.js';
 import { permissionsForRole } from '../../security/service/permission.service.js';
 import { getRuntime } from '../../setting/service/runtime.service.js';
 import { issueToken, consumeToken, clearTokens } from '../service/token.service.js';
-import { sendVerifyEmail, sendResetEmail } from '../../../helpers/email.js';
+import { notify } from '../../notification/service/notify.service.js';
 import { checkRegistrationEmail } from '../email-policy.js';
 
 function signToken(user) {
@@ -19,7 +19,9 @@ const verifyLink = (token) => `${env.appUrl}/verify-email?token=${token}`;
 // Fire off a verification email for a freshly created / unverified user.
 async function dispatchVerification(user) {
   const raw = await issueToken(user.id, 'verify');
-  await sendVerifyEmail(user.email, verifyLink(raw));
+  await notify('auth.verify', {
+    vars: { name: user.name || user.email, email: user.email, link: verifyLink(raw) },
+  });
 }
 
 export async function login(req, res, next) {
@@ -87,6 +89,7 @@ export async function register(req, res, next) {
     }
     const user = await users.createUser({ email, password, name, role: 'user', emailVerified: false });
     await dispatchVerification(user);
+    notify('auth.welcome', { vars: { name: user.name || user.email, email: user.email } }); // opt-in
     recordLog({ action: 'auth.register', message: `${user.email} registered`, userId: user.id, userEmail: user.email });
     res.status(201).json({ ok: true, message: 'Account created. Check your email to verify it.' });
   } catch (err) {
@@ -123,7 +126,13 @@ export async function forgotPassword(req, res, next) {
     // Always 200 — don't reveal whether the email exists.
     if (user) {
       const raw = await issueToken(user.id, 'reset');
-      await sendResetEmail(user.email, `${env.appUrl}/reset-password?token=${raw}`);
+      await notify('auth.reset', {
+        vars: {
+          name: user.name || user.email,
+          email: user.email,
+          link: `${env.appUrl}/reset-password?token=${raw}`,
+        },
+      });
     }
     res.json({ ok: true });
   } catch (err) {
@@ -173,6 +182,7 @@ export async function changePassword(req, res, next) {
       return res.status(400).json({ error: 'Current password is incorrect' });
     }
     await users.setPassword(req.user.id, newPassword);
+    notify('auth.passwordChanged', { vars: { name: user.name || user.email, email: user.email } }); // opt-in
     recordLog({ action: 'auth.password.change', message: 'Password changed', userId: req.user.id, userEmail: req.user.email });
     res.json({ ok: true });
   } catch (err) {

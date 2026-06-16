@@ -3,6 +3,7 @@ import { getStats } from '../service/stats.service.js';
 import { getPerformance } from '../service/performance.service.js';
 import { recordLog } from '../../log/service/log.service.js';
 import { getRole } from '../../security/service/role.service.js';
+import { notify } from '../../notification/service/notify.service.js';
 
 // A role is valid if it exists (and isn't soft-deleted) in the roles collection.
 const isValidRole = async (role) => Boolean(await getRole(role));
@@ -54,6 +55,7 @@ export async function createUser(req, res, next) {
       userId: req.user.id,
       meta: { targetId: user.id },
     });
+    notify('user.created', { vars: { email: user.email, role: user.role } }); // → admins (opt-in)
     res.status(201).json(user);
   } catch (err) {
     next(err);
@@ -77,6 +79,7 @@ export async function updateRole(req, res, next) {
       userId: req.user.id,
       meta: { targetId: user.id, role },
     });
+    notify('user.roleChanged', { vars: { email: user.email, role } }); // → the user (opt-in)
     res.json(user);
   } catch (err) {
     next(err);
