@@ -37,8 +37,11 @@ export function createBaseService(model, options = {}) {
     // safe even for models that don't track soft deletes.
     const query = { deletedAt: null, ...filters };
     if (search && searchableFields.length) {
+      // Escape regex metacharacters so user input is matched literally — avoids
+      // ReDoS and "special char breaks the search" surprises.
+      const safe = String(search).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = searchableFields.map((field) => ({
-        [field]: { $regex: search, $options: 'i' },
+        [field]: { $regex: safe, $options: 'i' },
       }));
     }
     return query;

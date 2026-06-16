@@ -1,11 +1,20 @@
 import app from './app.js';
-import { env } from '../config/env.js';
+import { env, isProduction } from '../config/env.js';
 import { connectDatabase, disconnectDatabase } from '../config/db.js';
 import { startLogCleanup } from '../modules/log/service/log.service.js';
 import { ensureSystemRoles } from '../modules/security/service/role.service.js';
 import { ensureDefaultPermissions } from '../modules/security/service/permission.service.js';
 
 async function start() {
+  // Refuse to boot in production with insecure defaults.
+  if (isProduction && env.jwt.secret === 'dev-secret-change-me') {
+    console.error('[server] FATAL: JWT_SECRET is the default in production — set a strong secret.');
+    process.exit(1);
+  }
+  if (isProduction && env.seedAdmin.password === 'admin1234') {
+    console.warn('[server] WARNING: seed admin password is the default — change SEED_ADMIN_PASSWORD.');
+  }
+
   await connectDatabase();
   startLogCleanup(); // purge logs past the retention window (now + daily)
   await ensureSystemRoles(); // make sure the admin/user roles always exist
