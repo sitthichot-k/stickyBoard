@@ -106,14 +106,10 @@ export async function sendMail({ to, subject, html, text }) {
 }
 
 // Test send — throws on failure so the Config page can surface the error.
-export async function sendTestMail(to) {
+export async function sendTestMail(to, { subject, text } = {}) {
   const t = buildTransport();
   if (cache.host) await t.verify();
-  await t.sendMail({
-    from: cache.from,
-    to,
-    subject: 'Sticky Board — test email',
-    text: 'Your SMTP configuration works. ✅',
-    html: '<p>Your SMTP configuration works. ✅</p>',
-  });
+  const s = subject || 'Sticky Board — test email';
+  const body = text || 'Your SMTP configuration works. ✅';
+  await t.sendMail({ from: cache.from, to, subject: s, text: body, html: `<p>${body.replace(/\n/g, '<br>')}</p>` });
 }

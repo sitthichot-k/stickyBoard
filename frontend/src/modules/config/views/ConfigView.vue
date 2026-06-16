@@ -2,8 +2,11 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import * as api from '@/modules/config/api/config.js';
 import * as noti from '@/modules/notification/api/notification.js';
+import { useAuthStore } from '@/modules/auth/stores/auth.js';
 import BaseAlert from '@/components/BaseAlert.vue';
 import BaseButton from '@/components/BaseButton.vue';
+
+const auth = useAuthStore();
 
 const rt = ref(null);
 const blocked = ref([]);
@@ -115,14 +118,43 @@ async function saveMail() {
   }
 }
 
-async function runTest() {
+// Test-email dialog: choose recipient + custom message, or auto-fill from a template.
+const showTest = ref(false);
+const testForm = ref({ to: '', subject: '', text: '', templateKey: '' });
+
+function openTest() {
+  mailMsg.value = '';
+  mailErr.value = '';
+  testForm.value = {
+    to: auth.user?.email || '',
+    subject: 'Sticky Board — test email',
+    text: 'This is a test email. ✅',
+    templateKey: '',
+  };
+  showTest.value = true;
+}
+
+function autofillTest() {
+  const tpl = notiTemplates.value.find((t) => t.key === testForm.value.templateKey);
+  if (tpl) {
+    testForm.value.subject = tpl.subject || testForm.value.subject;
+    testForm.value.text = tpl.body || testForm.value.text;
+  }
+}
+
+async function sendTest() {
   if (testing.value) return;
   testing.value = true;
   mailMsg.value = '';
   mailErr.value = '';
   try {
-    const r = await api.testMail();
+    const r = await api.testMail({
+      to: testForm.value.to,
+      subject: testForm.value.subject,
+      text: testForm.value.text,
+    });
     mailMsg.value = `Test email sent to ${r.sentTo}.`;
+    showTest.value = false;
   } catch (e) {
     mailErr.value = e.message;
   } finally {
@@ -303,9 +335,7 @@ onUnmounted(() => clearInterval(timer));
           <BaseButton :disabled="mailSaving" @click="saveMail">
             {{ mailSaving ? 'Saving…' : 'Save SMTP' }}
           </BaseButton>
-          <BaseButton variant="ghost" :disabled="testing" @click="runTest">
-            {{ testing ? 'Sending…' : 'Send test email' }}
-          </BaseButton>
+          <BaseButton variant="ghost" @click="openTest">Send test email…</BaseButton>
         </div>
       </section>
 
@@ -362,6 +392,39 @@ onUnmounted(() => clearInterval(timer));
           </table>
         </div>
       </section>
+    </div>
+
+    <!-- Test email dialog -->
+    <div v-if="showTest" class="modal" @click.self="showTest = false">
+      <div class="modal__box">
+        <h2>Send test email</h2>
+        <BaseAlert v-if="mailErr" variant="danger">{{ mailErr }}</BaseAlert>
+        <label class="tfield">
+          <span>To</span>
+          <input v-model="testForm.to" type="email" class="control control--full" />
+        </label>
+        <label class="tfield">
+          <span>Auto-fill from template</span>
+          <select v-model="testForm.templateKey" class="control control--full" @change="autofillTest">
+            <option value="">— none —</option>
+            <option v-for="t in notiTemplates" :key="t.key" :value="t.key">{{ t.name }}</option>
+          </select>
+        </label>
+        <label class="tfield">
+          <span>Subject</span>
+          <input v-model="testForm.subject" class="control control--full" />
+        </label>
+        <label class="tfield">
+          <span>Message</span>
+          <textarea v-model="testForm.text" rows="6" class="control control--full" />
+        </label>
+        <div class="modal__actions">
+          <BaseButton variant="ghost" @click="showTest = false">Cancel</BaseButton>
+          <BaseButton :disabled="testing || !testForm.to" @click="sendTest">
+            {{ testing ? 'Sending…' : 'Send' }}
+          </BaseButton>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -492,6 +555,47 @@ onUnmounted(() => clearInterval(timer));
   .mail-grid {
     grid-template-columns: 1fr;
   }
+}
+/* Test-email modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.45);
+  padding: var(--space-4);
+}
+.modal__box {
+  width: min(520px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.modal__box h2 {
+  margin: 0;
+}
+.tfield {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tfield > span {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+.modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
 }
 /* toggle switch */
 .switch {

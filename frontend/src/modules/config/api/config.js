@@ -9,4 +9,4 @@ export const unblock = (key) =>
 // SMTP config (password is write-only — never returned).
 export const fetchMail = () => http.get('/settings/mail').then((r) => r.data);
 export const updateMail = (patch) => http.put('/settings/mail', patch).then((r) => r.data);
-export const testMail = () => http.post('/settings/mail/test').then((r) => r.data);
+export const testMail = (body) => http.post('/settings/mail/test', body).then((r) => r.data);

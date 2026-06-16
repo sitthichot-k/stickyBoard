@@ -105,8 +105,13 @@ export async function updateMail(req, res, next) {
 
 export async function testMail(req, res) {
   try {
-    await mail.sendTestMail(req.user.email);
-    res.json({ ok: true, sentTo: req.user.email });
+    const { to, subject, text } = req.body ?? {};
+    const recipient = (to && String(to).trim()) || req.user.email;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
+      return res.status(400).json({ error: 'Enter a valid recipient email' });
+    }
+    await mail.sendTestMail(recipient, { subject, text });
+    res.json({ ok: true, sentTo: recipient });
   } catch (err) {
     res.status(400).json({ error: `Test failed: ${err.message}` });
   }
