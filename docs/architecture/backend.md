@@ -103,14 +103,30 @@ that powers frontend undo. See
 `middleware/logger.js` logs one line per request on `res.finish` with a business
 code (HTTP status × 100, e.g. `20000`/`40400`) — invaluable for spotting what
 failed and where during development. It also **persists every API request to the
-`log` collection** (configurable in `config/logger.js`: `LOG_API_TRAFFIC`, skip
-list, `LOG_RETENTION_DAYS`); the `log` module additionally records semantic audit
-events (`auth.login`, `user.*`, `settings.update`) and runs a daily cleanup of
-logs past the retention window.
+`log` collection** (the dynamic **Logs** capability per page can opt a page out);
+the `log` module additionally records semantic audit events (`auth.login`,
+`user.*`, `runtime.update`, `ratelimit.blocked`, …). Retention is enforced by a
+**MongoDB TTL index** (`ensureLogTtlIndex`, re-synced on boot) with the daily
+interval purge as a backup.
 
 `middleware/errorHandler.js` provides `notFound` (404 JSON) and `errorHandler`
 (central handler — keeps all 4 args so Express recognises it). Both include the
 business `code` in the JSON body; stack traces are added only outside production.
+**5xx errors are also persisted** as an `app.error` log (message + method/path +
+stack in `meta`) so admins can diagnose from the Logs page.
+
+## Observability & runtime config
+
+- **Performance** — `admin/service/performance.service.js` derives latency
+  (p50/p95/p99 via `$percentile`), error rate, hourly throughput, status mix, and
+  top/slowest endpoints from the `api.request` logs (plus process self-metrics),
+  surfaced at `GET /admin/performance`.
+- **Runtime controls** — `setting/service/runtime.service.js` holds
+  admin-tunable flags (`rateLimitEnabled`, `logApiTraffic`, `logRetentionDays`)
+  persisted in settings and cached in memory so the rate limiter and logger read
+  them synchronously; changes apply live (Config page → `/settings/runtime`),
+  with `config/*` holding the env-derived fallbacks. The rate limiter exposes a
+  blocked-callers list + manual unblock.
 
 ## Scripts
 

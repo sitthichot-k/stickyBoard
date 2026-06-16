@@ -26,11 +26,15 @@ Modules:
   resolved `permissions`, with `can`/`canAccess` helpers), auth api.
 - **board** — `SheetsView`, `BoardView`, `StickyNote`; sheets + notes stores
   (notes/connections/strokes/undo-redo); sheets/notes/connections/strokes api.
-- **admin** — `UsersView` (manage users), `DashboardView` (KPIs + SVG charts),
+- **admin** — `UsersView` (manage users), `DashboardView` (KPIs + SVG charts +
+  a performance panel: latency/error-rate/throughput from the request logs),
   admin api.
 - **settings** — `SettingsView` (admin) + a settings store; drives the
   site-wide announcement banner in `App.vue`.
-- **logs** — `LogsView` (admin): paginated event log with level/search filters.
+- **config** — `ConfigView` (admin): runtime toggles (rate limiting, traffic
+  logging, log retention) + a blocked-caller monitor with manual unblock.
+- **logs** — `LogsView` (admin): paginated event log with level/search filters;
+  rows expand to show `meta` (e.g. an `app.error` stack trace).
 - **security** — `SecurityView` (admin): the Permission Matrix — pick a group
   (role), toggle each page's capabilities, and manage custom roles; security api.
 - **tools** — `MergePdfView`, `ScanPdfView` (client-side, standalone).

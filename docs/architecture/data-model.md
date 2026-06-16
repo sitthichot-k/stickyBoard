@@ -59,13 +59,17 @@ key/value app settings (upserted; no soft delete).
 
 | Field | Type | Default | Notes |
 | --- | --- | --- | --- |
-| `key` | String | — | required, unique (e.g. `announcement`) |
+| `key` | String | — | required, unique (e.g. `announcement`, `runtime`) |
 | `value` | Mixed | `{}` | merged with code defaults on read |
+
+The `runtime` key stores the live-tunable controls (`rateLimitEnabled`,
+`logApiTraffic`, `logRetentionDays`) read by the Config page + middleware.
 
 ## Log
 
-`backend/src/modules/log/models/log.model.js` — append-only audit/event log
-(auto-purged past `LOG_RETENTION_DAYS`).
+`backend/src/modules/log/models/log.model.js` — append-only audit/event log.
+Retention is enforced by a MongoDB **TTL index** on `createdAt`
+(`LOG_RETENTION_DAYS`, re-synced on boot) with a daily interval purge as backup.
 
 | Field | Type | Default | Notes |
 | --- | --- | --- | --- |

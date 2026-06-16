@@ -37,6 +37,7 @@ Gated by the permission matrix (pages `admin-dashboard` / `admin-users`).
 | Method | Path | Capability | Description |
 | --- | --- | --- | --- |
 | GET | `/api/v1/admin/stats` | dashboard·view | analytics — counts, top sheets, 14-day activity |
+| GET | `/api/v1/admin/performance` | dashboard·view | request-log analytics — latency p50/p95/p99, error rate, hourly throughput, status mix, top/slowest endpoints, rate-limit blocks, process self-metrics |
 | GET | `/api/v1/admin/users` | users·view | list users |
 | POST | `/api/v1/admin/users` | users·edit | create a user — body `{ email, password, name?, role? }` |
 | PATCH | `/api/v1/admin/users/:id/role` | users·edit | set a user's role — body `{ role }` |
@@ -71,6 +72,17 @@ Manages the dynamic RBAC config; mounted hard behind the `admin` role.
 | GET | `/api/v1/settings` | public settings for any signed-in user (e.g. the announcement banner) |
 | GET | `/api/v1/settings/all` | all settings (capability `admin-settings·view`) |
 | PUT | `/api/v1/settings/:key` | update one whitelisted setting (`admin-settings·edit`) — body `{ value }` |
+
+### Runtime config (Config page, capability `admin-config`)
+
+Live-tunable controls (cached in memory, applied without a redeploy).
+
+| Method | Path | Description |
+| --- | --- | --- |
+| GET | `/api/v1/settings/runtime` | current `{ rateLimitEnabled, logApiTraffic, logRetentionDays }` |
+| PUT | `/api/v1/settings/runtime` | patch any of those fields (changing retention re-syncs the log TTL) |
+| GET | `/api/v1/settings/runtime/blocked` | callers currently blocked by the rate limiter |
+| DELETE | `/api/v1/settings/runtime/blocked/:key` | manually lift a block (`admin-config·action`) |
 
 ## Health
 

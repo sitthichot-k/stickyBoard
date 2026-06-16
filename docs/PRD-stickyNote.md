@@ -215,6 +215,19 @@ Custom roles + a page/capability permission matrix, editable from the UI.
 | FR-SEC-004 | **Owner** mode: an owner-scoped role only sees boards it created (`Sheet.ownerId`). | ✅ |
 | FR-SEC-005 | **Logs** capability: per page × role toggle for whether requests are persisted to the logs. | ✅ |
 
+### 3.19 Observability & runtime config — `Feature: Config`
+
+Deeper in-app insight + live-tunable controls (no hardware/host metrics — those
+belong to infra monitoring).
+
+| FR | Requirement | Status |
+| --- | --- | --- |
+| FR-OBS-001 | Dashboard performance panel from the request logs: latency p50/p95/p99, error rate, hourly throughput, status mix, top/slowest endpoints, rate-limit blocks, process self-metrics. | ✅ |
+| FR-OBS-002 | 5xx errors persisted as `app.error` logs (message + stack in meta); Logs rows expand to show meta. | ✅ |
+| FR-OBS-003 | Log retention via MongoDB TTL index (boot-synced) with interval-purge backup. | ✅ |
+| FR-CFG-001 | Admin Config page: live toggles for rate limiting + traffic logging and an editable retention window (cached, applied without redeploy). | ✅ |
+| FR-CFG-002 | Blocked-caller monitor with manual unblock. | ✅ |
+
 ## 4. Non-functional requirements
 
 | NFR | Requirement |
