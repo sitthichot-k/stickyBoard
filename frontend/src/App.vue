@@ -14,6 +14,22 @@ function toggleTheme() {
   document.documentElement.setAttribute('data-theme', theme.value);
 }
 
+// Per-user accent colour (stored in localStorage — changes only this browser).
+const ACCENTS = [
+  { key: 'violet', color: '#8b5cf6' },
+  { key: 'ocean', color: '#0ea5e9' },
+  { key: 'emerald', color: '#10b981' },
+  { key: 'rose', color: '#f43f5e' },
+];
+const accent = ref(localStorage.getItem('accent') || 'violet');
+document.documentElement.setAttribute('data-accent', accent.value);
+
+function setAccent(key) {
+  accent.value = key;
+  localStorage.setItem('accent', key);
+  document.documentElement.setAttribute('data-accent', key);
+}
+
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
@@ -85,6 +101,21 @@ function logout() {
       </nav>
 
       <div class="sidebar__foot">
+        <div class="sidebar__theme">
+          <span class="sidebar__theme-label">Theme color</span>
+          <div class="sidebar__swatches">
+            <button
+              v-for="a in ACCENTS"
+              :key="a.key"
+              class="swatch"
+              :class="{ on: accent === a.key }"
+              :style="{ background: a.color }"
+              :title="a.key"
+              :aria-label="`${a.key} theme`"
+              @click="setAccent(a.key)"
+            />
+          </div>
+        </div>
         <div v-if="auth.user" class="sidebar__user">
           <span class="sidebar__user-name">{{ auth.user.name || auth.user.email }}</span>
           <span class="sidebar__role">{{ auth.user.role }}</span>
@@ -173,7 +204,39 @@ function logout() {
   margin-top: auto;
   display: flex;
   flex-direction: column;
+  gap: var(--space-3);
+}
+.sidebar__theme {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-2);
+}
+.sidebar__theme-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.sidebar__swatches {
+  display: flex;
+  gap: var(--space-2);
+}
+.swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.12s ease;
+}
+.swatch:hover {
+  transform: scale(1.12);
+}
+.swatch.on {
+  border-color: var(--color-text);
 }
 .sidebar__user {
   display: flex;
