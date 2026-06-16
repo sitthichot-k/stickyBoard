@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useNotesStore } from '@/modules/board/stores/notes.js';
 import { useSheetsStore } from '@/modules/board/stores/sheets.js';
+import { useAuthStore } from '@/modules/auth/stores/auth.js';
 import StickyNote from '@/modules/board/components/StickyNote.vue';
 import BaseAlert from '@/components/BaseAlert.vue';
 
@@ -11,10 +12,23 @@ const route = useRoute();
 const router = useRouter();
 const store = useNotesStore();
 const sheets = useSheetsStore();
+const auth = useAuthStore();
 const { notes, connections, strokes, loading, error, colors, canUndo, canRedo } = storeToRefs(store);
 const { current: sheet } = storeToRefs(sheets);
 
 const bgClass = computed(() => `bg-${sheet.value?.background || 'dots'}`);
+
+// Per-sheet background style — editable after creation.
+const BACKGROUNDS = [
+  { key: 'dots', label: 'Dots', icon: '⠿' },
+  { key: 'grid', label: 'Grid', icon: '▦' },
+  { key: 'blank', label: 'Blank', icon: '▢' },
+];
+const canEditSheet = computed(() => auth.can('sheets', 'edit'));
+function setBackground(bg) {
+  if ((sheet.value?.background || 'dots') === bg) return;
+  sheets.updateCurrent({ background: bg });
+}
 
 const FRAME_W = 4000;
 const FRAME_H = 3000;
@@ -545,6 +559,16 @@ function onMiniUp(e) {
       <RouterLink to="/" class="board-info__back" title="Back to sheets">←</RouterLink>
       <strong>{{ sheet?.name || 'Board' }}</strong>
       <span class="text-muted"> · {{ notes.length }} notes</span>
+      <span v-if="canEditSheet" class="board-info__bg">
+        <button
+          v-for="b in BACKGROUNDS"
+          :key="b.key"
+          class="bg-btn"
+          :class="{ active: (sheet?.background || 'dots') === b.key }"
+          :title="`${b.label} background`"
+          @click="setBackground(b.key)"
+        >{{ b.icon }}</button>
+      </span>
     </div>
 
     <div
@@ -787,6 +811,32 @@ function onMiniUp(e) {
   color: var(--color-primary);
   text-decoration: none;
   line-height: 1;
+}
+.board-info__bg {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: var(--space-1);
+  padding-left: var(--space-2);
+  border-left: 1px solid var(--color-border);
+}
+.bg-btn {
+  width: 26px;
+  height: 26px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1;
+  color: var(--color-text-muted);
+}
+.bg-btn:hover {
+  background: var(--color-primary-soft);
+}
+.bg-btn.active {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
 }
 .board {
   position: absolute;

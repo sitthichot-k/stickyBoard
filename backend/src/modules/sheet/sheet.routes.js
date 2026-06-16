@@ -8,6 +8,7 @@ const router = Router();
 router.get('/', requirePermission('sheets', 'view'), controller.list);
 router.post('/', requirePermission('sheets', 'edit'), controller.create);
 router.get('/:id', requirePermission('sheets', 'view'), controller.getOne);
+router.patch('/:id', requirePermission('sheets', 'edit'), controller.update);
 router.delete('/:id', requirePermission('sheets', 'delete'), controller.remove);
 
 export default router;

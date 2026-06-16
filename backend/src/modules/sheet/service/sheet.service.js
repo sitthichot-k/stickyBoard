@@ -12,6 +12,7 @@ export const listSheets = ({ ownerId } = {}) => {
 };
 export const getSheet = (id) => base.searchOne(id);
 export const createSheet = (payload) => base.create(payload);
+export const updateSheet = (id, payload) => base.update(id, payload);
 export const deleteSheet = (id) => base.delete(id);
 
 // Undo a delete: clear the soft-delete marker (keeps the same id).

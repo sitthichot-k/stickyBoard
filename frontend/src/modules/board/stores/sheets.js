@@ -43,6 +43,22 @@ export const useSheetsStore = defineStore('sheets', {
       }
     },
 
+    // Update the open sheet (e.g. its background style). Optimistic.
+    async updateCurrent(patch) {
+      if (!this.current) return;
+      const prev = this.current;
+      this.current = { ...this.current, ...patch };
+      try {
+        const updated = await api.updateSheet(prev.id, patch);
+        this.current = updated;
+        const i = this.sheets.findIndex((s) => s.id === updated.id);
+        if (i !== -1) this.sheets[i] = updated;
+      } catch (err) {
+        this.error = err.message;
+        this.current = prev; // roll back
+      }
+    },
+
     // Open a sheet for the board view; returns the sheet (or null if missing).
     async open(id) {
       try {

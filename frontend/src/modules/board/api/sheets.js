@@ -12,6 +12,10 @@ export function createSheet(payload) {
   return http.post('/sheets', payload).then((res) => res.data);
 }
 
+export function updateSheet(id, payload) {
+  return http.patch(`/sheets/${id}`, payload).then((res) => res.data);
+}
+
 export function deleteSheet(id) {
   return http.delete(`/sheets/${id}`).then((res) => res.data);
 }
