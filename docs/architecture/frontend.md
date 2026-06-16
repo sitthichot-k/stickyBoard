@@ -22,8 +22,10 @@ frontend/src/
 
 Modules:
 
-- **auth** — `LoginView`, `NoAccessView`, auth store (token + current user +
-  resolved `permissions`, with `can`/`canAccess` helpers), auth api.
+- **auth** — `LoginView`, `RegisterView`, `VerifyEmailView`,
+  `ForgotPasswordView`, `ResetPasswordView`, `AccountView` (profile + change
+  password), `NoAccessView`; auth store (token + current user + resolved
+  `permissions`, with `can`/`canAccess` helpers), auth api.
 - **board** — `SheetsView`, `BoardView`, `StickyNote`; sheets + notes stores
   (notes/connections/strokes/undo-redo); sheets/notes/connections/strokes api.
 - **admin** — `UsersView` (manage users), `DashboardView` (KPIs + SVG charts +
@@ -32,7 +34,9 @@ Modules:
 - **settings** — `SettingsView` (admin) + a settings store; drives the
   site-wide announcement banner in `App.vue`.
 - **config** — `ConfigView` (admin): runtime toggles (rate limiting, traffic
-  logging, log retention) + a blocked-caller monitor with manual unblock.
+  logging, registration, email-verification, log retention), an admin-managed
+  SMTP section (write-only password, send-test), and a blocked-caller monitor
+  with manual unblock.
 - **logs** — `LogsView` (admin): paginated event log with level/search filters;
   rows expand to show `meta` (e.g. an `app.error` stack trace).
 - **security** — `SecurityView` (admin): the Permission Matrix — pick a group

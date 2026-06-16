@@ -227,6 +227,16 @@ belong to infra monitoring).
 | FR-OBS-003 | Log retention via MongoDB TTL index (boot-synced) with interval-purge backup. | ✅ |
 | FR-CFG-001 | Admin Config page: live toggles for rate limiting + traffic logging and an editable retention window (cached, applied without redeploy). | ✅ |
 | FR-CFG-002 | Blocked-caller monitor with manual unblock. | ✅ |
+| FR-CFG-003 | Admin-managed SMTP config (password encrypted at rest, write-only, send-test). | ✅ |
+
+### 3.20 Account & auth flows — `Feature: Auth`
+
+| FR | Requirement | Status |
+| --- | --- | --- |
+| FR-AUTH-001 | Self-registration, gated by the `allowRegistration` toggle. | ✅ |
+| FR-AUTH-002 | Email verification (one-time TTL token); login can require it via `requireEmailVerified` (admins exempt). | ✅ |
+| FR-AUTH-003 | Password reset (forgot → emailed token → reset). | ✅ |
+| FR-AUTH-004 | Account page: update profile + change password (verifies current). | ✅ |
 
 ## 4. Non-functional requirements
 

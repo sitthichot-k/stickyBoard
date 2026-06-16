@@ -15,16 +15,25 @@ Error responses include that code: `{ "code": 40400, "error": "..." }`.
 
 ## Auth
 
-The whole app requires login (no public sign-up — users are seeded or created by
-an admin). Protected endpoints need an `Authorization: Bearer <token>` header.
+Login plus optional self-registration (admins can also create users). Protected
+endpoints need an `Authorization: Bearer <token>` header.
 
 | Method | Path | Description |
 | --- | --- | --- |
-| POST | `/api/v1/auth/login` | body `{ email, password }` → `{ token, user }` (JWT; `user` includes its role `permissions`) |
-| GET | `/api/v1/auth/me` | current user + resolved `permissions` (requires token) |
+| GET | `/api/v1/auth/config` | public flags `{ allowRegistration }` for the login/register pages |
+| POST | `/api/v1/auth/login` | `{ email, password }` → `{ token, user }` (JWT; `user` includes its `permissions`); `403 EMAIL_NOT_VERIFIED` when verification is required |
+| POST | `/api/v1/auth/register` | `{ email, password, name? }` — only when `allowRegistration`; sends a verify email |
+| POST | `/api/v1/auth/verify-email` | `{ token }` |
+| POST | `/api/v1/auth/resend-verification` | `{ email }` (always `200`) |
+| POST | `/api/v1/auth/forgot-password` | `{ email }` (always `200`) |
+| POST | `/api/v1/auth/reset-password` | `{ token, password }` |
+| GET | `/api/v1/auth/me` | current user + resolved `permissions` (token) |
+| PATCH | `/api/v1/auth/me` | update own profile `{ name }` (token) |
+| POST | `/api/v1/auth/change-password` | `{ currentPassword, newPassword }` (token) |
 
-`health` and `auth/login` are public; **all other endpoints below require a
-valid token**. Access is then governed by the **permission matrix** (see
+`config`, `login`, `register`, `verify-email`, `resend-verification`,
+`forgot-password`, `reset-password`, and `health` are public; **all other
+endpoints below require a valid token**. Access is then governed by the **permission matrix** (see
 Security): each route declares a page + capability, and the user's role must
 grant it (`401` without a token, `403` without the capability). The `admin` role
 always passes. A user's `role` references the roles collection (custom roles
@@ -79,10 +88,13 @@ Live-tunable controls (cached in memory, applied without a redeploy).
 
 | Method | Path | Description |
 | --- | --- | --- |
-| GET | `/api/v1/settings/runtime` | current `{ rateLimitEnabled, logApiTraffic, logRetentionDays }` |
+| GET | `/api/v1/settings/runtime` | current `{ rateLimitEnabled, logApiTraffic, logRetentionDays, allowRegistration, requireEmailVerified }` |
 | PUT | `/api/v1/settings/runtime` | patch any of those fields (changing retention re-syncs the log TTL) |
 | GET | `/api/v1/settings/runtime/blocked` | callers currently blocked by the rate limiter |
 | DELETE | `/api/v1/settings/runtime/blocked/:key` | manually lift a block (`admin-config·action`) |
+| GET | `/api/v1/settings/mail` | SMTP config — **masked** (`hasPassword`, never the password) |
+| PUT | `/api/v1/settings/mail` | update SMTP — password is write-only (encrypted at rest; kept when omitted) |
+| POST | `/api/v1/settings/mail/test` | send a test email to the admin (`admin-config·action`) |
 
 ## Health
 

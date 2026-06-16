@@ -22,7 +22,21 @@ role × page matrix). See below.
 | `passwordHash` | String | — | bcrypt hash (never exposed in `toJSON`) |
 | `name` | String | `''` | display name |
 | `role` | String | `user` | references a `Role.key` (validated against the roles collection; custom roles allowed) |
+| `emailVerified` | Boolean | `false` | set via the verify-email flow; login can require it |
 | `deletedAt` | Date | `null` | soft-delete marker |
+
+## Token
+
+`backend/src/modules/auth/models/token.model.js` — one-time tokens for email
+verification + password reset. Only a **hash** of the token is stored; the raw
+value is e-mailed. Auto-expired by a TTL index on `expiresAt`.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `userId` | ObjectId (ref User) | owner |
+| `type` | enum verify/reset | flow |
+| `tokenHash` | String | sha256 of the raw token |
+| `expiresAt` | Date | TTL — verify 24h, reset 1h |
 
 ## Role
 
@@ -63,7 +77,9 @@ key/value app settings (upserted; no soft delete).
 | `value` | Mixed | `{}` | merged with code defaults on read |
 
 The `runtime` key stores the live-tunable controls (`rateLimitEnabled`,
-`logApiTraffic`, `logRetentionDays`) read by the Config page + middleware.
+`logApiTraffic`, `logRetentionDays`, `allowRegistration`, `requireEmailVerified`)
+read by the Config page + middleware. The `mail` key stores SMTP settings with
+the **password encrypted at rest** (AES-256-GCM).
 
 ## Log
 

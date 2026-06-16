@@ -57,12 +57,18 @@ Feature services compose it instead of re-implementing CRUD. See
 
 ## Auth
 
-Login-only (no public sign-up). `POST /auth/login` verifies a bcrypt password and
-returns a JWT; `middleware/auth.js` exposes `requireAuth` (verifies the bearer
-token → `req.user`) and `requireAdmin` (role check, used only for the sensitive
-`/security` config surface). Data routes are mounted behind `requireAuth` in
-`routes/routes.js`. Config lives in `config/env.js` (`jwt.secret`,
-`jwt.expiresIn`, seed admin).
+`POST /auth/login` verifies a bcrypt password and returns a JWT;
+`middleware/auth.js` exposes `requireAuth` (verifies the bearer token →
+`req.user`) and `requireAdmin` (role check, used only for the sensitive
+`/security` surface). Data routes are mounted behind `requireAuth`.
+
+Beyond login the `auth` module offers **self-registration** (gated by the
+`allowRegistration` runtime flag), **email verification**, **password reset**,
+and authenticated **profile / change-password** — backed by a one-time `Token`
+collection (hashed, TTL-expiring). Email is sent via `helpers/email.js` →
+`setting/service/mail.service.js`, whose SMTP config is admin-managed (encrypted
+at rest, env as the bootstrap default); with no SMTP host configured the message
+(e.g. the verify/reset link) is logged to the console for dev/template use.
 
 ## Authorisation — dynamic RBAC (`security` module)
 
