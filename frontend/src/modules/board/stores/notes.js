@@ -105,10 +105,12 @@ export const useNotesStore = defineStore('notes', {
     // Soft-delete a note + its arrows; returns the removed arrows so they can be restored.
     async _deleteNote(id) {
       const conns = this.connections.filter((c) => c.from === id || c.to === id);
+      // Persist first — if it's rejected (e.g. no delete permission) the UI is
+      // left untouched instead of flickering the note out and back on refresh.
+      await api.deleteNote(id);
       this.notes = this.notes.filter((n) => n.id !== id);
       this.connections = this.connections.filter((c) => c.from !== id && c.to !== id);
       persisted.delete(id);
-      await api.deleteNote(id);
       return conns;
     },
     async _restoreNote(id, conns = []) {
@@ -127,8 +129,8 @@ export const useNotesStore = defineStore('notes', {
       persisted.set(id, { ...(persisted.get(id) ?? {}), ...values });
     },
     async _deleteConnection(id) {
+      await connectionApi.deleteConnection(id); // persist first (see _deleteNote)
       this.connections = this.connections.filter((c) => c.id !== id);
-      await connectionApi.deleteConnection(id);
     },
     async _restoreConnection(id) {
       const conn = await connectionApi.restoreConnection(id);
@@ -240,8 +242,8 @@ export const useNotesStore = defineStore('notes', {
 
     /* ---- Drawing strokes ---- */
     async _deleteStroke(id) {
+      await strokeApi.deleteStroke(id); // persist first (see _deleteNote)
       this.strokes = this.strokes.filter((s) => s.id !== id);
-      await strokeApi.deleteStroke(id);
     },
     async _restoreStroke(id) {
       const stroke = await strokeApi.restoreStroke(id);
