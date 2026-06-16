@@ -77,6 +77,16 @@ h3 {
   color: var(--color-text-muted);
 }
 
+/* Standard responsive panel layout: fills the page width, collapses to one
+   column on narrow screens. Use inside a full-width `.page` for any view with
+   multiple panels/cards. */
+.page-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
 /* Auth screens — login / register / forgot / reset / verify. */
 .auth {
   min-height: 100vh;

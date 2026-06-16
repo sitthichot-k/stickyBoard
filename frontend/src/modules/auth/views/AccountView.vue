@@ -64,6 +64,7 @@ async function changePassword() {
       <h1>👤 Account</h1>
     </header>
 
+    <div class="page-grid">
     <section class="panel">
       <h2 class="panel__title">Profile</h2>
       <div class="meta">
@@ -106,13 +107,14 @@ async function changePassword() {
         {{ savingPw ? 'Saving…' : 'Change password' }}
       </BaseButton>
     </section>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .page {
   padding: 80px var(--space-5) var(--space-6);
-  max-width: 560px;
+  max-width: 920px;
   height: 100%;
   overflow: auto;
 }

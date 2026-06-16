@@ -148,7 +148,7 @@ onUnmounted(() => clearInterval(timer));
     <BaseAlert v-if="error" variant="danger">{{ error }}</BaseAlert>
     <p v-if="loading" class="text-muted">Loading…</p>
 
-    <template v-if="rt">
+    <div v-if="rt" class="cfg">
       <section class="panel">
         <h2 class="panel__title">Runtime toggles</h2>
 
@@ -284,7 +284,7 @@ onUnmounted(() => clearInterval(timer));
         </div>
       </section>
 
-      <section class="panel">
+      <section class="panel cfg__full">
         <div class="panel__head">
           <h2 class="panel__title">Blocked callers ({{ blocked.length }})</h2>
           <BaseButton variant="ghost" @click="loadBlocked">Refresh</BaseButton>
@@ -313,7 +313,7 @@ onUnmounted(() => clearInterval(timer));
           </table>
         </div>
       </section>
-    </template>
+    </div>
   </div>
 </template>
 
@@ -332,9 +332,22 @@ onUnmounted(() => clearInterval(timer));
 .page__head h1 {
   margin: 0;
 }
+.cfg {
+  max-width: 1180px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+.cfg__full {
+  grid-column: 1 / -1;
+}
+@media (max-width: 880px) {
+  .cfg {
+    grid-template-columns: 1fr;
+  }
+}
 .panel {
-  max-width: 760px;
-  margin-bottom: var(--space-4);
   padding: var(--space-4) var(--space-5);
   background: var(--color-surface);
   border: 1px solid var(--color-border);

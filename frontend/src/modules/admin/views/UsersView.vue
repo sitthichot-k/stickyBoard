@@ -17,6 +17,7 @@ const form = ref({ email: '', name: '', password: '', role: 'user' });
 const saving = ref(false);
 
 const isSelf = (u) => u.id === auth.user?.id;
+const fmtDate = (d) => (d ? new Date(d).toLocaleDateString() : '—');
 
 async function load() {
   loading.value = true;
@@ -98,8 +99,10 @@ async function remove(u) {
         <tr>
           <th>Email</th>
           <th>Name</th>
+          <th>Status</th>
+          <th>Joined</th>
           <th>Role</th>
-          <th></th>
+          <th class="right">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -109,6 +112,12 @@ async function remove(u) {
             <span v-if="isSelf(u)" class="badge">you</span>
           </td>
           <td>{{ u.name || '—' }}</td>
+          <td>
+            <span class="badge" :class="u.emailVerified ? 'badge--ok' : 'badge--warn'">
+              {{ u.emailVerified ? 'verified' : 'unverified' }}
+            </span>
+          </td>
+          <td class="nowrap text-muted">{{ fmtDate(u.createdAt) }}</td>
           <td>
             <select
               class="role"
@@ -163,7 +172,6 @@ async function remove(u) {
 <style scoped>
 .page {
   padding: 80px var(--space-5) var(--space-6);
-  max-width: 880px;
   height: 100%;
   overflow: auto;
 }
@@ -205,7 +213,6 @@ async function remove(u) {
   border-bottom: none;
 }
 .badge {
-  margin-left: var(--space-2);
   font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -213,6 +220,20 @@ async function remove(u) {
   border-radius: 999px;
   background: var(--color-primary-soft);
   color: var(--color-primary);
+}
+.badge--ok {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+.badge--warn {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+.right {
+  text-align: right;
+}
+.nowrap {
+  white-space: nowrap;
 }
 .role {
   padding: var(--space-1) var(--space-2);
