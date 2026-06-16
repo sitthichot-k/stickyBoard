@@ -11,6 +11,14 @@ const error = ref('');
 const filters = ref({ level: '', search: '' });
 const page = ref(1);
 const limit = ref(20);
+const expanded = ref(new Set());
+
+const hasMeta = (l) => l.meta && Object.keys(l.meta).length > 0;
+function toggle(id) {
+  const s = new Set(expanded.value);
+  s.has(id) ? s.delete(id) : s.add(id);
+  expanded.value = s;
+}
 
 async function load() {
   loading.value = true;
@@ -90,13 +98,21 @@ function fmt(ts) {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="l in logs" :key="l.id">
-          <td class="nowrap text-muted">{{ fmt(l.createdAt) }}</td>
-          <td><span class="badge" :class="`badge--${l.level}`">{{ l.level }}</span></td>
-          <td class="nowrap"><code>{{ l.action }}</code></td>
-          <td class="nowrap text-muted">{{ l.userEmail || '—' }}</td>
-          <td>{{ l.message }}</td>
-        </tr>
+        <template v-for="l in logs" :key="l.id">
+          <tr :class="{ 'row--clickable': hasMeta(l) }" @click="hasMeta(l) && toggle(l.id)">
+            <td class="nowrap text-muted">
+              <span v-if="hasMeta(l)" class="chev">{{ expanded.has(l.id) ? '▾' : '▸' }}</span>
+              {{ fmt(l.createdAt) }}
+            </td>
+            <td><span class="badge" :class="`badge--${l.level}`">{{ l.level }}</span></td>
+            <td class="nowrap"><code>{{ l.action }}</code></td>
+            <td class="nowrap text-muted">{{ l.userEmail || '—' }}</td>
+            <td>{{ l.message }}</td>
+          </tr>
+          <tr v-if="expanded.has(l.id)" class="meta-row">
+            <td :colspan="5"><pre class="meta">{{ JSON.stringify(l.meta, null, 2) }}</pre></td>
+          </tr>
+        </template>
         </tbody>
       </table>
     </div>
@@ -177,6 +193,31 @@ function fmt(ts) {
 }
 .nowrap {
   white-space: nowrap;
+}
+.row--clickable {
+  cursor: pointer;
+}
+.row--clickable:hover {
+  background: var(--color-primary-soft);
+}
+.chev {
+  display: inline-block;
+  width: 12px;
+  color: var(--color-text-muted);
+}
+.meta-row td {
+  background: var(--color-bg);
+  padding: 0 var(--space-3) var(--space-3);
+}
+.meta {
+  margin: 0;
+  max-height: 320px;
+  overflow: auto;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--color-text-muted);
 }
 .badge {
   font-size: 0.65rem;
