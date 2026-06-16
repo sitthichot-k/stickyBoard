@@ -117,10 +117,10 @@ function logout() {
             />
           </div>
         </div>
-        <div v-if="auth.user" class="sidebar__user">
+        <RouterLink v-if="auth.user" to="/account" class="sidebar__user" title="Account settings">
           <span class="sidebar__user-name">{{ auth.user.name || auth.user.email }}</span>
           <span class="sidebar__role">{{ auth.user.role }}</span>
-        </div>
+        </RouterLink>
         <button class="sidebar__logout" @click="logout">Sign out</button>
       </div>
     </aside>
@@ -245,6 +245,12 @@ function logout() {
   justify-content: space-between;
   gap: var(--space-2);
   font-size: var(--font-size-sm);
+  color: var(--color-text);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+}
+.sidebar__user:hover {
+  background: var(--color-primary-soft);
 }
 .sidebar__user-name {
   overflow: hidden;

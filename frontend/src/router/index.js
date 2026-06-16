@@ -41,6 +41,12 @@ const routes = [
     meta: { public: true },
   },
   {
+    path: '/account',
+    name: 'account',
+    component: () => import('@/modules/auth/views/AccountView.vue'),
+    // No meta.page — every signed-in user can manage their own account.
+  },
+  {
     path: '/',
     name: 'sheets',
     component: () => import('@/modules/board/views/SheetsView.vue'),
