@@ -56,6 +56,7 @@ const navGroups = [
       { to: '/admin/dashboard', label: '📊 Dashboard', page: 'admin-dashboard' },
       { to: '/admin/users', label: '👥 Users', page: 'admin-users' },
       { to: '/admin/settings', label: '⚙️ Settings', page: 'admin-settings' },
+      { to: '/admin/config', label: '🛠️ Config', page: 'admin-config' },
       { to: '/admin/logs', label: '📋 Logs', page: 'admin-logs' },
       { to: '/admin/security', label: '🛡️ Permission Matrix', page: 'admin-security' },
     ],

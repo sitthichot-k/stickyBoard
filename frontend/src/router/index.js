@@ -59,6 +59,12 @@ const routes = [
     meta: { page: 'admin-settings' },
   },
   {
+    path: '/admin/config',
+    name: 'admin-config',
+    component: () => import('@/modules/config/views/ConfigView.vue'),
+    meta: { page: 'admin-config' },
+  },
+  {
     path: '/admin/logs',
     name: 'admin-logs',
     component: () => import('@/modules/logs/views/LogsView.vue'),
