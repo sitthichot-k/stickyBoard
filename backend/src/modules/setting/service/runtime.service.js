@@ -16,17 +16,23 @@ function envDefaults() {
     rateLimitEnabled: rateLimitConfig.enabled,
     logApiTraffic: loggerConfig.logApiTraffic,
     logRetentionDays: loggerConfig.retentionDays,
+    allowRegistration: process.env.ALLOW_REGISTRATION === 'true',
+    requireEmailVerified: process.env.REQUIRE_EMAIL_VERIFIED === 'true',
   };
 }
+
+const bool = (v, fallback) => (typeof v === 'boolean' ? v : fallback);
 
 function resolve(stored) {
   const d = envDefaults();
   const v = stored && typeof stored === 'object' ? stored : {};
   const days = Number(v.logRetentionDays);
   return {
-    rateLimitEnabled: typeof v.rateLimitEnabled === 'boolean' ? v.rateLimitEnabled : d.rateLimitEnabled,
-    logApiTraffic: typeof v.logApiTraffic === 'boolean' ? v.logApiTraffic : d.logApiTraffic,
+    rateLimitEnabled: bool(v.rateLimitEnabled, d.rateLimitEnabled),
+    logApiTraffic: bool(v.logApiTraffic, d.logApiTraffic),
     logRetentionDays: Number.isFinite(days) && days > 0 ? Math.floor(days) : d.logRetentionDays,
+    allowRegistration: bool(v.allowRegistration, d.allowRegistration),
+    requireEmailVerified: bool(v.requireEmailVerified, d.requireEmailVerified),
   };
 }
 

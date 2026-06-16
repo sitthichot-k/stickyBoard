@@ -22,8 +22,15 @@ async function seed() {
     password: env.seedAdmin.password,
     name: 'Admin',
     role: 'admin',
+    emailVerified: true,
   });
-  await createUser({ email: 'user@example.com', password: 'user1234', name: 'User', role: 'user' });
+  await createUser({
+    email: 'user@example.com',
+    password: 'user1234',
+    name: 'User',
+    role: 'user',
+    emailVerified: true,
+  });
   console.log(`[seed] admin: ${env.seedAdmin.email} / ${env.seedAdmin.password}`);
 
   // Roles & the permission matrix are bootstrapped automatically on server boot

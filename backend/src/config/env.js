@@ -18,6 +18,18 @@ export const env = {
     email: process.env.SEED_ADMIN_EMAIL ?? 'admin@example.com',
     password: process.env.SEED_ADMIN_PASSWORD ?? 'admin1234',
   },
+  // Public base URL of the frontend — used to build links in emails.
+  appUrl: process.env.APP_URL ?? 'http://localhost:8080',
+  // Outbound email. With no SMTP host configured, mails are logged to the
+  // console (dev/template friendly — works out of the box).
+  mail: {
+    host: process.env.SMTP_HOST ?? '',
+    port: Number(process.env.SMTP_PORT ?? 587),
+    secure: process.env.SMTP_SECURE === 'true',
+    user: process.env.SMTP_USER ?? '',
+    pass: process.env.SMTP_PASS ?? '',
+    from: process.env.MAIL_FROM ?? 'Sticky Board <no-reply@stickyboard.local>',
+  },
 };
 
 export const isProduction = env.nodeEnv === 'production';

@@ -53,6 +53,8 @@ export async function updateRuntime(req, res, next) {
     const patch = {};
     if (b.rateLimitEnabled !== undefined) patch.rateLimitEnabled = Boolean(b.rateLimitEnabled);
     if (b.logApiTraffic !== undefined) patch.logApiTraffic = Boolean(b.logApiTraffic);
+    if (b.allowRegistration !== undefined) patch.allowRegistration = Boolean(b.allowRegistration);
+    if (b.requireEmailVerified !== undefined) patch.requireEmailVerified = Boolean(b.requireEmailVerified);
     if (b.logRetentionDays !== undefined) {
       const days = Number(b.logRetentionDays);
       if (!Number.isFinite(days) || days < 1 || days > 365) {

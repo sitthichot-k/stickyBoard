@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema(
     // References a Role.key. Validated against the roles collection on
     // create/update (custom roles are allowed) rather than a fixed enum.
     role: { type: String, default: 'user', lowercase: true, trim: true },
+    emailVerified: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null },
   },
   {

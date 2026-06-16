@@ -13,10 +13,19 @@ export const deleteUser = (id) => base.delete(id);
 export const findByEmail = (email) =>
   User.findOne({ email: String(email).toLowerCase().trim(), deletedAt: null });
 
-export async function createUser({ email, password, name, role }) {
+export async function createUser({ email, password, name, role, emailVerified = false }) {
   const passwordHash = await bcrypt.hash(password, 10);
-  return User.create({ email, passwordHash, name, role });
+  return User.create({ email, passwordHash, name, role, emailVerified });
 }
+
+// Set a new password (used by reset + change-password).
+export async function setPassword(id, password) {
+  const passwordHash = await bcrypt.hash(password, 10);
+  return User.findByIdAndUpdate(id, { passwordHash }, { new: true });
+}
+
+export const markEmailVerified = (id) =>
+  User.findByIdAndUpdate(id, { emailVerified: true }, { new: true });
 
 export async function setRole(id, role) {
   return User.findOneAndUpdate({ _id: id, deletedAt: null }, { role }, { new: true });
