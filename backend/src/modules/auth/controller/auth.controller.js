@@ -6,6 +6,7 @@ import { permissionsForRole } from '../../security/service/permission.service.js
 import { getRuntime } from '../../setting/service/runtime.service.js';
 import { issueToken, consumeToken, clearTokens } from '../service/token.service.js';
 import { sendVerifyEmail, sendResetEmail } from '../../../helpers/email.js';
+import { checkRegistrationEmail } from '../email-policy.js';
 
 function signToken(user) {
   return jwt.sign({ sub: user.id, role: user.role, email: user.email }, env.jwt.secret, {
@@ -32,9 +33,11 @@ export async function login(req, res, next) {
       recordLog({ level: 'warn', action: 'auth.login.failed', message: `Failed login for ${email}` });
       return res.status(401).json({ error: 'Invalid email or password' });
     }
-    // Optional gate: block unverified users when the admin requires verification
-    // (admins are exempt so they can never lock themselves out).
-    if (getRuntime().requireEmailVerified && !user.emailVerified && user.role !== 'admin') {
+    // Block unverified users when verification is required, or whenever public
+    // registration is open (so self-signups must prove a real email — admins and
+    // admin-created users are verified up front, so they're never affected).
+    const mustVerify = getRuntime().requireEmailVerified || getRuntime().allowRegistration;
+    if (mustVerify && !user.emailVerified && user.role !== 'admin') {
       return res.status(403).json({ error: 'Please verify your email before signing in', code: 'EMAIL_NOT_VERIFIED' });
     }
     recordLog({
@@ -77,6 +80,8 @@ export async function register(req, res, next) {
     const { email, password, name } = req.body ?? {};
     if (!email || !password) return res.status(400).json({ error: 'email and password are required' });
     if (password.length < 6) return res.status(400).json({ error: 'password must be at least 6 characters' });
+    const policy = checkRegistrationEmail(email);
+    if (!policy.ok) return res.status(400).json({ error: policy.error });
     if (await users.findByEmail(email)) {
       return res.status(409).json({ error: 'A user with this email already exists' });
     }

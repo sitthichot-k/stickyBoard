@@ -46,7 +46,8 @@ export async function createUser(req, res, next) {
     if (await users.findByEmail(email)) {
       return res.status(409).json({ error: 'A user with this email already exists' });
     }
-    const user = await users.createUser({ email, password, name, role: role || 'user' });
+    // Admin-created accounts are trusted → verified up front (no self-signup gate).
+    const user = await users.createUser({ email, password, name, role: role || 'user', emailVerified: true });
     recordLog({
       action: 'user.create',
       message: `Created user ${user.email} (${user.role})`,
