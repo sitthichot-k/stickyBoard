@@ -9,6 +9,11 @@ router.post('/login', loginRateLimiter, controller.login);
 router.post('/register', loginRateLimiter, controller.register);
 router.post('/verify-email', controller.verifyEmail);
 router.post('/resend-verification', loginRateLimiter, controller.resendVerification);
+router.post('/forgot-password', loginRateLimiter, controller.forgotPassword);
+router.post('/reset-password', loginRateLimiter, controller.resetPassword);
+
 router.get('/me', requireAuth, controller.me);
+router.patch('/me', requireAuth, controller.updateProfile);
+router.post('/change-password', requireAuth, controller.changePassword);
 
 export default router;

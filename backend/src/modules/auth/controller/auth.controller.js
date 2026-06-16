@@ -4,8 +4,8 @@ import * as users from '../../user/service/user.service.js';
 import { recordLog } from '../../log/service/log.service.js';
 import { permissionsForRole } from '../../security/service/permission.service.js';
 import { getRuntime } from '../../setting/service/runtime.service.js';
-import { issueToken, consumeToken } from '../service/token.service.js';
-import { sendVerifyEmail } from '../../../helpers/email.js';
+import { issueToken, consumeToken, clearTokens } from '../service/token.service.js';
+import { sendVerifyEmail, sendResetEmail } from '../../../helpers/email.js';
 
 function signToken(user) {
   return jwt.sign({ sub: user.id, role: user.role, email: user.email }, env.jwt.secret, {
@@ -101,6 +101,69 @@ export async function resendVerification(req, res, next) {
     const user = await users.findByEmail(req.body?.email ?? '');
     // Always 200 — don't reveal whether the email exists.
     if (user && !user.emailVerified) await dispatchVerification(user);
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function forgotPassword(req, res, next) {
+  try {
+    const user = await users.findByEmail(req.body?.email ?? '');
+    // Always 200 — don't reveal whether the email exists.
+    if (user) {
+      const raw = await issueToken(user.id, 'reset');
+      await sendResetEmail(user.email, `${env.appUrl}/reset-password?token=${raw}`);
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function resetPassword(req, res, next) {
+  try {
+    const { token, password } = req.body ?? {};
+    if (!password || password.length < 6) {
+      return res.status(400).json({ error: 'password must be at least 6 characters' });
+    }
+    const userId = await consumeToken(token, 'reset');
+    if (!userId) return res.status(400).json({ error: 'Invalid or expired reset link' });
+    await users.setPassword(userId, password);
+    await clearTokens(userId, 'reset'); // drop any other outstanding reset tokens
+    recordLog({ level: 'warn', action: 'auth.password.reset', message: 'Password reset', userId });
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ---- Authenticated account management ----
+
+export async function updateProfile(req, res, next) {
+  try {
+    if (req.body?.name === undefined) return res.status(400).json({ error: 'nothing to update' });
+    const user = await users.updateProfile(req.user.id, { name: req.body.name });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const permissions = await permissionsForRole(user.role);
+    res.json({ ...user.toJSON(), permissions });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function changePassword(req, res, next) {
+  try {
+    const { currentPassword, newPassword } = req.body ?? {};
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ error: 'new password must be at least 6 characters' });
+    }
+    const user = await users.getUser(req.user.id); // doc still carries passwordHash
+    if (!user || !(await users.verifyPassword(currentPassword ?? '', user.passwordHash))) {
+      return res.status(400).json({ error: 'Current password is incorrect' });
+    }
+    await users.setPassword(req.user.id, newPassword);
+    recordLog({ action: 'auth.password.change', message: 'Password changed', userId: req.user.id, userEmail: req.user.email });
     res.json({ ok: true });
   } catch (err) {
     next(err);

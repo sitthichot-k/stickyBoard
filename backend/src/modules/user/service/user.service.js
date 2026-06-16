@@ -27,6 +27,10 @@ export async function setPassword(id, password) {
 export const markEmailVerified = (id) =>
   User.findByIdAndUpdate(id, { emailVerified: true }, { new: true });
 
+// Self-service profile update (whitelisted fields only).
+export const updateProfile = (id, { name }) =>
+  User.findByIdAndUpdate(id, { name: String(name ?? '').trim() }, { new: true });
+
 export async function setRole(id, role) {
   return User.findOneAndUpdate({ _id: id, deletedAt: null }, { role }, { new: true });
 }
