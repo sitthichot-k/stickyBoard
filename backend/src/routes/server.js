@@ -4,6 +4,7 @@ import { connectDatabase, disconnectDatabase } from '../config/db.js';
 import { startLogCleanup, ensureLogTtlIndex } from '../modules/log/service/log.service.js';
 import { ensureSystemRoles } from '../modules/security/service/role.service.js';
 import { ensureDefaultPermissions } from '../modules/security/service/permission.service.js';
+import { loadRuntime } from '../modules/setting/service/runtime.service.js';
 
 async function start() {
   // Refuse to boot in production with insecure defaults.
@@ -20,6 +21,7 @@ async function start() {
   startLogCleanup(); // backup purge (now + daily)
   await ensureSystemRoles(); // make sure the admin/user roles always exist
   await ensureDefaultPermissions(); // seed the default matrix if it's empty
+  await loadRuntime(); // load runtime controls into the in-memory cache
 
   const server = app.listen(env.port, () => {
     console.log(`[server] listening on http://localhost:${env.port} (${env.nodeEnv})`);

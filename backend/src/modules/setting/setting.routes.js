@@ -9,6 +9,13 @@ const router = Router();
 router.get('/', requireAuth, controller.getPublic);
 // Managing settings is governed by the matrix (admin always passes).
 router.get('/all', requireAuth, requirePermission('admin-settings', 'view'), controller.getAll);
+
+// Runtime controls (Config page) — defined before /:key so they take priority.
+router.get('/runtime', requireAuth, requirePermission('admin-config', 'view'), controller.getRuntime);
+router.put('/runtime', requireAuth, requirePermission('admin-config', 'edit'), controller.updateRuntime);
+router.get('/runtime/blocked', requireAuth, requirePermission('admin-config', 'view'), controller.blockedList);
+router.delete('/runtime/blocked/:key', requireAuth, requirePermission('admin-config', 'action'), controller.unblockIp);
+
 router.put('/:key', requireAuth, requirePermission('admin-settings', 'edit'), controller.update);
 
 export default router;

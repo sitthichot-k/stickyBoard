@@ -1,6 +1,11 @@
 import { rateLimitConfig } from '../config/rateLimit.js';
 import { businessCode } from './logger.js';
 import { recordLog } from '../modules/log/service/log.service.js';
+import { getRuntime } from '../modules/setting/service/runtime.service.js';
+
+// Every limiter's hit-map is registered so the Config page can inspect/clear
+// currently-blocked callers.
+const registry = [];
 
 /**
  * Build an in-memory rate-limit middleware. Each caller (authenticated user id,
@@ -13,6 +18,7 @@ import { recordLog } from '../modules/log/service/log.service.js';
 export function createRateLimiter({ windowMs, max, blockMs, name = 'rate' }) {
   /** key → { count, windowStart, blockedUntil } */
   const hits = new Map();
+  registry.push({ name, hits });
 
   // Drop stale entries so the map doesn't grow unbounded.
   const sweep = setInterval(() => {
@@ -33,7 +39,7 @@ export function createRateLimiter({ windowMs, max, blockMs, name = 'rate' }) {
   }
 
   return function rateLimit(req, res, next) {
-    if (!rateLimitConfig.enabled) return next();
+    if (!getRuntime().rateLimitEnabled) return next(); // toggled live from Config
 
     const key = req.user?.id || req.ip || 'unknown';
     const now = Date.now();
@@ -89,3 +95,31 @@ export const loginRateLimiter = createRateLimiter({
   blockMs: rateLimitConfig.loginBlockMs,
   name: 'login',
 });
+
+// Currently-blocked callers across all limiters (for the Config monitor).
+export function getBlocked() {
+  const now = Date.now();
+  const out = [];
+  for (const { name, hits } of registry) {
+    for (const [key, e] of hits) {
+      if (e.blockedUntil > now) {
+        out.push({
+          limiter: name,
+          key,
+          remainingMs: e.blockedUntil - now,
+          blockedUntil: new Date(e.blockedUntil).toISOString(),
+        });
+      }
+    }
+  }
+  return out.sort((a, b) => b.remainingMs - a.remainingMs);
+}
+
+// Manually lift a block (admin action). Returns how many limiters held it.
+export function unblock(key) {
+  let cleared = 0;
+  for (const { hits } of registry) {
+    if (hits.delete(key)) cleared += 1;
+  }
+  return cleared;
+}

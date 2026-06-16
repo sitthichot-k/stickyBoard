@@ -2,6 +2,7 @@ import { loggerConfig } from '../config/logger.js';
 import { recordLog } from '../modules/log/service/log.service.js';
 import { can } from '../modules/security/service/permission.service.js';
 import { pageForApiPath } from '../modules/security/catalog.js';
+import { getRuntime } from '../modules/setting/service/runtime.service.js';
 
 // Human-readable label per HTTP status (extend as needed).
 const STATUS_LABEL = {
@@ -46,7 +47,7 @@ export function requestLogger(req, res, next) {
     // Persist the request as a DB log unless: logging is off, it's a CORS
     // preflight, it hits a noisy path, or the request's page has its "Logs"
     // capability turned off for the acting role (the permission matrix).
-    if (!loggerConfig.logApiTraffic || req.method === 'OPTIONS') return;
+    if (!getRuntime().logApiTraffic || req.method === 'OPTIONS') return; // toggled live
     if (loggerConfig.skipPaths.some((p) => req.originalUrl.startsWith(p))) return;
     const page = pageForApiPath(req.originalUrl);
     if (page && req.user?.role && !(await can(req.user.role, page.key, 'logs'))) return;
