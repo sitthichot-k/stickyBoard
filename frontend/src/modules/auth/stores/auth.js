@@ -26,6 +26,13 @@ export const useAuthStore = defineStore('auth', {
       this.user = user;
       localStorage.setItem('token', token);
     },
+    register(payload) {
+      return api.register(payload); // no auto-login (may need email verification)
+    },
+    // Merge updates into the current user (after a profile change).
+    setUser(user) {
+      this.user = { ...this.user, ...user };
+    },
     logout() {
       this.token = '';
       this.user = null;

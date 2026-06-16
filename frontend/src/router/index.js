@@ -17,6 +17,30 @@ const routes = [
     meta: { public: true },
   },
   {
+    path: '/register',
+    name: 'register',
+    component: () => import('@/modules/auth/views/RegisterView.vue'),
+    meta: { public: true },
+  },
+  {
+    path: '/forgot-password',
+    name: 'forgot-password',
+    component: () => import('@/modules/auth/views/ForgotPasswordView.vue'),
+    meta: { public: true },
+  },
+  {
+    path: '/reset-password',
+    name: 'reset-password',
+    component: () => import('@/modules/auth/views/ResetPasswordView.vue'),
+    meta: { public: true },
+  },
+  {
+    path: '/verify-email',
+    name: 'verify-email',
+    component: () => import('@/modules/auth/views/VerifyEmailView.vue'),
+    meta: { public: true },
+  },
+  {
     path: '/',
     name: 'sheets',
     component: () => import('@/modules/board/views/SheetsView.vue'),

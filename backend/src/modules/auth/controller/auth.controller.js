@@ -50,6 +50,11 @@ export async function login(req, res, next) {
   }
 }
 
+// Public (no auth) — flags the login/register pages need before sign-in.
+export function publicConfig(req, res) {
+  res.json({ allowRegistration: getRuntime().allowRegistration });
+}
+
 export async function me(req, res, next) {
   try {
     const user = await users.getUser(req.user.id);

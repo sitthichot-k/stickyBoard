@@ -5,6 +5,7 @@ import { loginRateLimiter } from '../../middleware/rateLimit.js';
 
 const router = Router();
 
+router.get('/config', controller.publicConfig);
 router.post('/login', loginRateLimiter, controller.login);
 router.post('/register', loginRateLimiter, controller.register);
 router.post('/verify-email', controller.verifyEmail);
