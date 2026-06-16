@@ -95,6 +95,18 @@ const routes = [
     meta: { page: 'admin-config' },
   },
   {
+    path: '/admin/notification-templates',
+    name: 'admin-notification-templates',
+    component: () => import('@/modules/notification/views/NotificationTemplatesView.vue'),
+    meta: { page: 'admin-notifications' },
+  },
+  {
+    path: '/admin/notification-matrix',
+    name: 'admin-notification-matrix',
+    component: () => import('@/modules/notification/views/NotificationMatrixView.vue'),
+    meta: { page: 'admin-notifications' },
+  },
+  {
     path: '/admin/logs',
     name: 'admin-logs',
     component: () => import('@/modules/logs/views/LogsView.vue'),

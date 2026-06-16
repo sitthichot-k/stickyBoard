@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import * as api from '@/modules/config/api/config.js';
+import * as noti from '@/modules/notification/api/notification.js';
 import BaseAlert from '@/components/BaseAlert.vue';
 import BaseButton from '@/components/BaseButton.vue';
 
@@ -129,9 +130,33 @@ async function runTest() {
   }
 }
 
+// ---- System emails (always-on notifications: verify / reset) ----
+const sysEvents = ref([]);
+const notiTemplates = ref([]);
+const sysTemplateExists = (key) => notiTemplates.value.some((t) => t.key === key);
+
+async function loadSystemEmails() {
+  try {
+    const [m, t] = await Promise.all([noti.fetchMatrix(), noti.fetchTemplates()]);
+    sysEvents.value = m.filter((r) => r.system);
+    notiTemplates.value = t;
+  } catch {
+    /* best-effort — hide the section if notifications aren't accessible */
+  }
+}
+async function changeSysTemplate(ev, templateKey) {
+  try {
+    Object.assign(ev, await noti.setRule({ eventKey: ev.eventKey, templateKey }));
+  } catch (e) {
+    error.value = e.message;
+    loadSystemEmails();
+  }
+}
+
 onMounted(() => {
   load();
   loadMail();
+  loadSystemEmails();
   loadBlocked();
   timer = setInterval(loadBlocked, 10000); // refresh the monitor
 });
@@ -284,6 +309,30 @@ onUnmounted(() => clearInterval(timer));
         </div>
       </section>
 
+      <section v-if="sysEvents.length" class="panel cfg__full">
+        <h2 class="panel__title">System emails</h2>
+        <p class="text-muted note">
+          Critical emails that always send — pick the template (manage wording in
+          Notification Templates).
+        </p>
+        <div v-for="ev in sysEvents" :key="ev.eventKey" class="row">
+          <div class="row__text">
+            <strong>{{ ev.label }}</strong>
+            <span class="text-muted">→ {{ ev.recipient }}</span>
+          </div>
+          <select
+            class="control sys-select"
+            :value="ev.templateKey"
+            @change="changeSysTemplate(ev, $event.target.value)"
+          >
+            <option v-for="t in notiTemplates" :key="t.key" :value="t.key">{{ t.name }}</option>
+            <option v-if="!sysTemplateExists(ev.templateKey)" :value="ev.templateKey">
+              {{ ev.templateKey }} (built-in)
+            </option>
+          </select>
+        </div>
+      </section>
+
       <section class="panel cfg__full">
         <div class="panel__head">
           <h2 class="panel__title">Blocked callers ({{ blocked.length }})</h2>
@@ -400,6 +449,11 @@ onUnmounted(() => clearInterval(timer));
 }
 .control--full {
   width: 100%;
+}
+.sys-select {
+  width: auto;
+  min-width: 220px;
+  max-width: 320px;
 }
 .note {
   margin: 0 0 var(--space-3);
