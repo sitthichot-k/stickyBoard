@@ -7,6 +7,7 @@ import { requirePermission } from '../../middleware/permission.js';
 const router = Router();
 
 router.get('/stats', requirePermission('admin-dashboard', 'view'), controller.stats);
+router.get('/performance', requirePermission('admin-dashboard', 'view'), controller.performance);
 router.get('/users', requirePermission('admin-users', 'view'), controller.listUsers);
 router.post('/users', requirePermission('admin-users', 'edit'), controller.createUser);
 router.patch('/users/:id/role', requirePermission('admin-users', 'edit'), controller.updateRole);

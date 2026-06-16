@@ -4,6 +4,7 @@ import * as api from '@/modules/admin/api/admin.js';
 import BaseAlert from '@/components/BaseAlert.vue';
 
 const stats = ref(null);
+const perf = ref(null);
 const loading = ref(false);
 const error = ref('');
 
@@ -16,6 +17,12 @@ async function load() {
     error.value = e.message;
   } finally {
     loading.value = false;
+  }
+  // Performance is best-effort — a failure here must not hide the core stats.
+  try {
+    perf.value = await api.fetchPerformance();
+  } catch {
+    /* leave the performance section hidden */
   }
 }
 onMounted(load);
@@ -52,6 +59,33 @@ const linePath = computed(() => {
 });
 const areaPath = computed(() => (linePath.value ? `${linePath.value} L ${CW},${CH} L 0,${CH} Z` : ''));
 const dayLabel = (d) => d.slice(5); // MM-DD
+
+/* ---- Performance (from api.request logs) ---- */
+const perfCards = computed(() => {
+  const p = perf.value;
+  if (!p) return [];
+  return [
+    { label: `Requests · ${p.windowHours}h`, value: p.requests },
+    { label: 'Error rate', value: `${p.errorRate}%`, danger: p.errorRate >= 5 },
+    { label: 'Latency p95', value: `${p.latency.p95} ms` },
+    { label: 'Rate-limit blocks', value: p.rateLimitBlocks, danger: p.rateLimitBlocks > 0 },
+  ];
+});
+const throughput = computed(() => perf.value?.throughput ?? []);
+const maxTp = computed(() => Math.max(1, ...throughput.value.map((t) => t.count)));
+const STATUS_COLORS = {
+  '2xx': 'var(--color-success)',
+  '3xx': 'var(--color-info)',
+  '4xx': 'var(--color-warning)',
+  '5xx': 'var(--color-danger)',
+};
+const maxEndpoint = computed(() => Math.max(1, ...(perf.value?.topEndpoints ?? []).map((e) => e.count)));
+
+function fmtUptime(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  return h ? `${h}h ${m}m` : `${m}m`;
+}
 </script>
 
 <template>
@@ -108,6 +142,92 @@ const dayLabel = (d) => d.slice(5); // MM-DD
           </div>
         </section>
       </div>
+
+      <!-- Performance (derived from api.request logs) -->
+      <template v-if="perf">
+        <h2 class="section-title">⚡ Performance · last {{ perf.windowHours }}h</h2>
+        <div class="kpis">
+          <div v-for="k in perfCards" :key="k.label" class="kpi">
+            <span class="kpi__value" :class="{ 'kpi__value--danger': k.danger }">{{ k.value }}</span>
+            <span class="kpi__label">{{ k.label }}</span>
+          </div>
+        </div>
+
+        <div class="grid">
+          <!-- Throughput -->
+          <section class="panel">
+            <h2 class="panel__title">Requests / hour</h2>
+            <div class="tp">
+              <span
+                v-for="(t, i) in throughput"
+                :key="i"
+                class="tp__bar"
+                :style="{ height: `${(t.count / maxTp) * 100}%` }"
+                :title="`${t.hour} · ${t.count}`"
+              />
+            </div>
+            <div class="chart__axis text-muted">
+              <span>{{ throughput[0]?.hour }}</span>
+              <span>peak {{ maxTp }}</span>
+              <span>{{ throughput[throughput.length - 1]?.hour }}</span>
+            </div>
+          </section>
+
+          <!-- Latency + status -->
+          <section class="panel">
+            <h2 class="panel__title">Latency (ms) &amp; status mix</h2>
+            <div class="lat">
+              <div v-for="k in ['avg', 'p50', 'p95', 'p99', 'max']" :key="k" class="lat__item">
+                <span class="lat__v">{{ perf.latency[k] }}</span>
+                <span class="lat__k text-muted">{{ k }}</span>
+              </div>
+            </div>
+            <div class="status">
+              <span
+                v-for="s in perf.statusBreakdown"
+                :key="s.klass"
+                class="status__seg"
+                :style="{ flex: s.count, background: STATUS_COLORS[s.klass] }"
+                :title="`${s.klass}: ${s.count}`"
+              />
+            </div>
+            <div class="status__legend text-muted">
+              <span v-for="s in perf.statusBreakdown" :key="s.klass">
+                <i :style="{ background: STATUS_COLORS[s.klass] }" />{{ s.klass }} {{ s.count }}
+              </span>
+            </div>
+          </section>
+
+          <!-- Top endpoints -->
+          <section class="panel">
+            <h2 class="panel__title">Top endpoints</h2>
+            <p v-if="!perf.topEndpoints.length" class="text-muted">No traffic yet.</p>
+            <div v-for="e in perf.topEndpoints" :key="`${e.method}${e.path}`" class="bar">
+              <span class="bar__name" :title="`${e.method} ${e.path}`"><code>{{ e.method }}</code> {{ e.path }}</span>
+              <span class="bar__track"><span class="bar__fill" :style="{ width: `${(e.count / maxEndpoint) * 100}%` }" /></span>
+              <span class="bar__count">{{ e.count }}</span>
+            </div>
+          </section>
+
+          <!-- Slowest -->
+          <section class="panel">
+            <h2 class="panel__title">Slowest endpoints (avg ms)</h2>
+            <p v-if="!perf.slowest.length" class="text-muted">Not enough data.</p>
+            <div v-for="e in perf.slowest" :key="`${e.method}${e.path}`" class="ep-row">
+              <span class="bar__name" :title="`${e.method} ${e.path}`"><code>{{ e.method }}</code> {{ e.path }}</span>
+              <span class="ep-row__ms">{{ e.avgMs }} ms</span>
+            </div>
+          </section>
+        </div>
+
+        <!-- Process self-metrics (this backend container) -->
+        <div class="proc text-muted">
+          <span>⏱ uptime {{ fmtUptime(perf.process.uptimeSec) }}</span>
+          <span>🧠 heap {{ perf.process.heapUsedMb }} / rss {{ perf.process.rssMb }} MB</span>
+          <span>🗄 mongo {{ perf.process.mongo }}</span>
+          <span>⬢ node {{ perf.process.nodeVersion }}</span>
+        </div>
+      </template>
     </template>
   </div>
 </template>
@@ -115,7 +235,6 @@ const dayLabel = (d) => d.slice(5); // MM-DD
 <style scoped>
 .page {
   padding: 80px var(--space-5) var(--space-6);
-  max-width: 980px;
   height: 100%;
   overflow: auto;
 }
@@ -218,6 +337,109 @@ const dayLabel = (d) => d.slice(5); // MM-DD
   flex-shrink: 0;
   text-align: right;
   font-weight: 700;
+  font-size: var(--font-size-sm);
+}
+
+/* ---- Performance section ---- */
+.section-title {
+  margin: var(--space-6) 0 var(--space-4);
+  font-size: var(--font-size-lg);
+}
+.kpi__value--danger {
+  background: none;
+  -webkit-text-fill-color: var(--color-danger);
+  color: var(--color-danger);
+}
+.tp {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 120px;
+}
+.tp__bar {
+  flex: 1;
+  min-height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--gradient-brand);
+  opacity: 0.85;
+}
+.tp__bar:hover {
+  opacity: 1;
+}
+.lat {
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.lat__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-2);
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+}
+.lat__v {
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+.lat__k {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.status {
+  display: flex;
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+.status__seg {
+  min-width: 2px;
+}
+.status__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+.status__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.status__legend i {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.ep-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+.ep-row__ms {
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+  color: var(--color-warning);
+}
+.proc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
 }
 </style>

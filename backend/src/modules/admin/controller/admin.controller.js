@@ -1,5 +1,6 @@
 import * as users from '../../user/service/user.service.js';
 import { getStats } from '../service/stats.service.js';
+import { getPerformance } from '../service/performance.service.js';
 import { recordLog } from '../../log/service/log.service.js';
 import { getRole } from '../../security/service/role.service.js';
 
@@ -9,6 +10,14 @@ const isValidRole = async (role) => Boolean(await getRole(role));
 export async function stats(req, res, next) {
   try {
     res.json(await getStats());
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function performance(req, res, next) {
+  try {
+    res.json(await getPerformance());
   } catch (err) {
     next(err);
   }
