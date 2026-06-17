@@ -59,6 +59,7 @@ const navGroups = [
       { to: '/admin/config', label: '🛠️ Config', page: 'admin-config' },
       { to: '/admin/notification-templates', label: '✉️ Noti Templates', page: 'admin-notifications' },
       { to: '/admin/notification-matrix', label: '🔔 Noti Matrix', page: 'admin-notifications' },
+      { to: '/admin/cameras', label: '📹 Cameras', page: 'admin-cameras' },
       { to: '/admin/logs', label: '📋 Logs', page: 'admin-logs' },
       { to: '/admin/security', label: '🛡️ Permission Matrix', page: 'admin-security' },
     ],

@@ -107,6 +107,12 @@ const routes = [
     meta: { page: 'admin-notifications' },
   },
   {
+    path: '/admin/cameras',
+    name: 'admin-cameras',
+    component: () => import('@/modules/camera/views/CamerasView.vue'),
+    meta: { page: 'admin-cameras' },
+  },
+  {
     path: '/admin/logs',
     name: 'admin-logs',
     component: () => import('@/modules/logs/views/LogsView.vue'),
