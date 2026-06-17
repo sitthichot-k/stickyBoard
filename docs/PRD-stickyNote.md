@@ -182,6 +182,7 @@ Admin-only analytics overview.
 | --- | --- | --- |
 | FR-DASH-001 | `GET /admin/stats` returns counts, top sheets by notes, and a 14-day activity series. | ✅ |
 | FR-DASH-002 | Admin Dashboard page: KPI cards + charts (in the Admin sidebar group). | ✅ |
+| FR-DASH-003 | `/admin/stats` includes a helmet-violation summary (today / 7-day / total / unreviewed counts, a 14-day trend, top cameras by violations); the Dashboard renders matching KPI cards + charts. | ⬜ |
 
 > Build order: PDF tools (FR-PDF / FR-SCAN) first, then auth-gated admin
 > features (FR-ADMIN / FR-DASH). See the roadmap discussion.
@@ -254,6 +255,36 @@ belong to infra monitoring).
 | FR-CAM-001 | Manage RTSP cameras (CRUD); the credentialed URL is encrypted at rest and never returned. | ✅ |
 | FR-CAM-002 | Server transcodes RTSP → HLS (ffmpeg, on demand + idle-reaped) and plays in-browser via hls.js. | ✅ |
 | FR-CAM-003 | RBAC-gated (`admin-cameras`) + audited; URL only ever comes from the DB (no SSRF). | ✅ |
+
+### 3.23 Helmet detection (YOLO) — `Feature: HelmetDetection`
+
+AI-assisted road-safety monitoring on existing RTSP cameras. **Phase 1 scope:
+helmet only** — detect riders without a helmet and capture a violation snapshot.
+License-plate reading (OCR) is explicitly **out of scope for phase 1** (a later
+phase adds `plateText`).
+
+Architecture: a **separate Python inference service** (ultralytics YOLO) runs the
+detection — Node does **not** embed YOLO. The Python service pulls frames from the
+camera's RTSP **directly** (URL fetched from a token-protected internal endpoint,
+never exposed to clients — no SSRF), samples frames, tracks riders to avoid
+duplicate violations, and posts each violation (+ snapshot image) back to the Node
+API. Snapshots are stored on a **filesystem volume** (durable, unlike the reaped
+HLS temp dir); the DB holds only the path. Phase 1 uses a **pre-trained** helmet
+model (weight path configurable via env).
+
+| FR | Requirement | Status |
+| --- | --- | --- |
+| FR-AI-001 | A standalone Python AI service pulls RTSP frames from cameras with `aiEnabled`, runs YOLO to detect riders + helmet state, samples frames, and tracks objects to dedupe repeat violations of the same rider. | ⬜ |
+| FR-AI-002 | On a `no_helmet` detection it captures a full-frame snapshot (+ thumbnail) and posts the violation to `POST /violations/ingest` (service-token auth); the backend persists a `Violation` record + the image files on a durable volume. | ⬜ |
+| FR-AI-003 | `Violation` model + REST: list/filter (camera / date / status), view the snapshot, and review/dismiss. RBAC-gated (`admin-violations`), audited, soft-deletable per the base-service pattern. | ⬜ |
+| FR-AI-004 | Camera gains an `aiEnabled` flag (per-camera toggle in the Cameras page); only enabled cameras are processed. | ⬜ |
+| FR-AI-005 | The Python AI service is wired into Docker Compose (its own service); the helmet model weight path is configurable (env), not hardcoded. | ⬜ |
+| FR-AI-006 | Snapshot retention: violation images are purged past a configurable window (disk + privacy), mirroring log retention. | ⬜ |
+
+> Build order (AI-flow phases): **Backend** (Violation model/service/routes,
+> ingest endpoint + service token, `aiEnabled`, storage, stats, RBAC catalog) →
+> **Frontend** (Violations page + review, Cameras toggle, Dashboard cards/charts)
+> → **Python service + Test/Docs**.
 
 ## 4. Non-functional requirements
 
