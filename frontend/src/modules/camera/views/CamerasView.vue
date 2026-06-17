@@ -55,7 +55,15 @@ function startPlayer() {
   const token = localStorage.getItem('token') || '';
 
   if (Hls.isSupported()) {
-    hls = new Hls({ xhrSetup: (xhr) => xhr.setRequestHeader('Authorization', `Bearer ${token}`) });
+    hls = new Hls({
+      xhrSetup: (xhr) => xhr.setRequestHeader('Authorization', `Bearer ${token}`),
+      // Start ~3 short segments from the live edge (smooth + near-live), but keep
+      // a rewind buffer and DON'T auto-snap to live — so the user can pause /
+      // scrub back within the server's DVR window. (Not lowLatencyMode: ffmpeg
+      // doesn't emit LL-HLS.)
+      liveSyncDurationCount: 3,
+      backBufferLength: 60,
+    });
     hls.loadSource(url);
     hls.attachMedia(video);
     hls.on(Hls.Events.ERROR, (_e, data) => {

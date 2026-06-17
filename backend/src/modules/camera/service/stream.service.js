@@ -11,6 +11,8 @@ import { recordLog } from '../../log/service/log.service.js';
 const HLS_ROOT = path.join(os.tmpdir(), 'sticky-hls');
 const IDLE_MS = 30_000;
 const TRANSCODE = process.env.CAMERA_TRANSCODE === 'true';
+// Seconds of rewind/pause buffer kept on disk (segments are 1s each).
+const DVR_SECONDS = Math.max(6, Number(process.env.CAMERA_DVR_SECONDS ?? 60));
 
 const streams = new Map(); // cameraId -> { proc, dir, lastAccess }
 const dirFor = (id) => path.join(HLS_ROOT, String(id));
@@ -31,13 +33,16 @@ export async function ensureStream(cameraId, userId = null) {
 
   const args = [
     '-rtsp_transport', 'tcp',
+    '-fflags', 'nobuffer',
+    '-flags', 'low_delay',
     '-i', url,
     '-an',
     '-c:v', TRANSCODE ? 'libx264' : 'copy',
-    ...(TRANSCODE ? ['-preset', 'veryfast', '-tune', 'zerolatency'] : []),
+    // Re-encode → force a ~1s GOP so segments can actually be short (lower latency).
+    ...(TRANSCODE ? ['-preset', 'veryfast', '-tune', 'zerolatency', '-g', '30', '-keyint_min', '30'] : []),
     '-f', 'hls',
-    '-hls_time', '2',
-    '-hls_list_size', '4',
+    '-hls_time', '1',
+    '-hls_list_size', String(DVR_SECONDS), // keep a rewind window (DVR)
     '-hls_flags', 'delete_segments+omit_endlist',
     '-hls_segment_filename', path.join(dir, 'seg%03d.ts'),
     path.join(dir, 'index.m3u8'),
