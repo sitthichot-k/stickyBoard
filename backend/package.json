@@ -11,7 +11,9 @@
     "start": "node src/routes/server.js",
     "dev": "nodemon src/routes/server.js",
     "seed": "node src/routes/seed.js",
-    "backfill:owners": "node src/routes/backfill-owners.js"
+    "backfill:owners": "node src/routes/backfill-owners.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -23,6 +25,7 @@
     "nodemailer": "^6.10.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.4"
+    "nodemon": "^3.1.4",
+    "vitest": "^4.1.9"
   }
 }
