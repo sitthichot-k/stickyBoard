@@ -71,6 +71,13 @@ export const PAGES = [
     apiPrefixes: ['/api/v1/cameras'],
   },
   {
+    key: 'admin-violations',
+    label: 'Violations',
+    path: '/admin/violations',
+    group: 'Admin',
+    apiPrefixes: ['/api/v1/violations'],
+  },
+  {
     key: 'admin-notifications',
     label: 'Notifications',
     path: '/admin/notifications',

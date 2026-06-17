@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import path from 'path';
 
 dotenv.config();
 
@@ -33,6 +34,15 @@ export const env = {
   // Key used to encrypt secrets at rest (SMTP password). Falls back to the JWT
   // secret if unset — set a dedicated value in production.
   mailSecret: process.env.MAIL_SECRET ?? '',
+  // AI helmet-detection (phase 1). A standalone Python inference service pulls
+  // RTSP frames and posts violations back, authenticating with `serviceToken`
+  // (endpoints are closed when it's unset). Snapshots are written to a durable
+  // `snapshotDir` (mount a volume in prod) and purged past `retentionDays`.
+  ai: {
+    serviceToken: process.env.AI_SERVICE_TOKEN ?? '',
+    snapshotDir: process.env.SNAPSHOT_DIR ?? path.join(process.cwd(), 'data', 'snapshots'),
+    retentionDays: Number(process.env.VIOLATION_RETENTION_DAYS ?? 30),
+  },
 };
 
 export const isProduction = env.nodeEnv === 'production';

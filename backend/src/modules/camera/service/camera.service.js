@@ -19,9 +19,9 @@ export const listCameras = () => Camera.find({ deletedAt: null }).sort({ name: 1
 export const getCamera = (id) => base.searchOne(id);
 export const deleteCamera = (id) => base.delete(id);
 
-export function createCamera({ name, location, url, enabled, createdBy }) {
+export function createCamera({ name, location, url, enabled, aiEnabled, createdBy }) {
   const { host } = parseRtsp(url);
-  return Camera.create({ name, location, host, urlEnc: encrypt(url), enabled, createdBy });
+  return Camera.create({ name, location, host, urlEnc: encrypt(url), enabled, aiEnabled, createdBy });
 }
 
 export function updateCamera(id, patch) {
@@ -39,4 +39,16 @@ export async function getStreamUrl(id) {
   const cam = await Camera.findOne({ _id: id, deletedAt: null });
   if (!cam || !cam.enabled) return null;
   return decrypt(cam.urlEnc);
+}
+
+// Internal only — cameras the AI service should process, with their decrypted
+// RTSP URL. Gated by a service token at the route; never exposed to browsers.
+export async function getAiSources() {
+  const cams = await Camera.find({ deletedAt: null, enabled: true, aiEnabled: true });
+  return cams.map((c) => ({
+    id: String(c._id),
+    name: c.name,
+    location: c.location,
+    rtspUrl: decrypt(c.urlEnc),
+  }));
 }
