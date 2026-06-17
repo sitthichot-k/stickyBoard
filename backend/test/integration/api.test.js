@@ -22,7 +22,7 @@ beforeAll(async () => {
   // Log writes are in flight when we tear the connection down.
   await setRuntime({ rateLimitEnabled: false, logApiTraffic: false });
   await createUser({ email: 'admin@t.co', password: 'admin123', role: 'admin', emailVerified: true });
-}, 60000);
+}, 120000); // generous — first CI run downloads the mongod binary
 
 afterAll(async () => {
   await new Promise((r) => setTimeout(r, 200)); // let fire-and-forget logs settle
