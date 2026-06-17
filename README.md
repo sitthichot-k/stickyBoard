@@ -1,10 +1,10 @@
-# Sticky Board — Vue + Node + MongoDB
+# Sticky Board — Vue + Node admin / RBAC starter
 
-A whiteboard web app. Create **sheets**, drop sticky **notes** on an infinite
-canvas, connect them with **arrows**, **draw** freehand, and zoom/pan around —
-all persisted to MongoDB with full **undo/redo**. Ships with **login + roles**,
-an **admin** area (user management + analytics dashboard), and two client-side
-**PDF tools** (Merge PDF, Scan to PDF).
+A **Vue + Node + MongoDB starter** built around a dynamic, admin-configurable
+control plane — with a **whiteboard** as the demo domain. The admin side (auth,
+roles/permissions, config, logs, notifications) is app-agnostic: swap the
+whiteboard for your own domain and keep everything else. See
+[CUSTOMIZE.md](CUSTOMIZE.md).
 
 | Layer    | Stack                              | Port  |
 | -------- | ---------------------------------- | ----- |
@@ -12,19 +12,28 @@ an **admin** area (user management + analytics dashboard), and two client-side
 | Backend  | Node + Express + Mongoose          | 8081  |
 | Database | MongoDB                            | 27018 |
 
-## Features
+## The control plane (the reusable core)
 
-- **Board** — sheets (dots/grid/blank background), draggable & resizable notes,
-  note-to-note arrows (4 anchors, elbow routing, self-loops), freehand drawing
-  (pencil/pen/brush + eraser), pan, zoom (30–200%), and a collapsible minimap.
-- **Undo / redo** — every action, persisted (built on soft-delete + restore).
-- **Auth** — login-only (no public sign-up), JWT, `user`/`admin` roles; the
-  whole app is behind a login guard.
-- **Admin** — manage users (create / change role / delete) and a dashboard
-  (KPIs + activity/top-sheet charts).
-- **Tools** — Merge PDF and Scan to PDF (images→A4, incl. iOS HEIC), entirely
-  in the browser.
-- **API** — versioned under `/api/v1`, request logging with business codes.
+- **Dynamic RBAC** — custom roles + a **Permission Matrix** (per role × page:
+  view/edit/delete/action/**owner**-scoping/**logs**); admin always passes.
+- **Auth** — login, optional self-registration (fake/disposable-email blocked),
+  email verification, password reset, and an account page. JWT.
+- **Admin suite** — Dashboard (KPIs + request-log performance: p95/error-rate/
+  throughput), Users, **Logs** (audit + 5xx capture + TTL retention),
+  **Config** (live rate-limit/logging/retention/registration toggles, SMTP,
+  blocked-IP monitor), **Notifications** (templates + event matrix), Settings
+  (announcement banner), per-user **themes**.
+- **Security** — rate limiting (flood + login brute-force), security headers,
+  secrets encrypted at rest, regex-escaped search, prod-secret guard.
+- **API docs** — Swagger UI at `/api/docs` ([guide](docs/architecture/swagger-guide.md)).
+- **Tested** — Vitest unit + integration (mongodb-memory-server) + frontend, with
+  GitHub Actions CI.
+
+## Demo domain — the whiteboard
+
+Sheets (dots/grid/blank), draggable/resizable notes, note-to-note arrows,
+freehand drawing + eraser, pan/zoom, minimap, full **undo/redo**, and two
+client-side **PDF tools** (Merge, Scan-to-PDF incl. iOS HEIC).
 
 ## Project structure
 
@@ -38,12 +47,14 @@ backend/src/
 ├── routes/      app · routes (aggregator) · server · seed
 └── modules/<feature>/   controller/ · models/ · service/ · <feature>.routes.js
         health · auth · user · admin · sheet · note · connection · stroke
+        setting · log · security · notification
 
 frontend/src/
 ├── helpers/http.js   (axios client)        components/ (shared Base* UI)
 ├── router/  styles/  App.vue  main.js
 └── modules/<feature>/   api/ · stores/ · components/ · views/
-        auth · board · admin · tools
+        auth · board · admin · settings · config · logs · security
+        notification · tools
 ```
 
 ## Run with Docker (dev — hot reload)
@@ -65,7 +76,8 @@ Then open **http://localhost:8080** and sign in:
 | admin | `admin@example.com`  | `admin1234` |
 | user  | `user@example.com`   | `user1234`  |
 
-> No public registration — admins create users from **Admin → Users**.
+> Self-registration is **off by default** — admins create users from **Admin →
+> Users**, and can enable public sign-up in **Config**.
 
 ### Production (built images, nginx)
 
@@ -86,20 +98,32 @@ cd frontend && cp .env.example .env && npm install && npm run dev
 
 ## API
 
-Versioned under `/api/v1`. `health` and `auth/login` are public; everything else
-needs an `Authorization: Bearer <token>`, and `/admin/*` needs the `admin` role.
-Full reference: [docs/architecture/rest-api.md](docs/architecture/rest-api.md).
+Versioned under `/api/v1`. `health`, `auth/login`, and `auth/register` are
+public; everything else needs an `Authorization: Bearer <token>` and is gated by
+the **permission matrix**. Interactive docs at **`/api/docs`** (Swagger), full
+reference in [docs/architecture/rest-api.md](docs/architecture/rest-api.md).
+
+## Tests
+
+```bash
+cd backend  && npm test   # unit + integration (mongodb-memory-server)
+cd frontend && npm test   # vitest
+```
+
+CI (`.github/workflows/ci.yml`) runs both + the frontend build on every push/PR.
 
 ## Documentation
 
-- [docs/](docs/) — architecture, data model, REST API, and how-to "skills".
+- [CUSTOMIZE.md](CUSTOMIZE.md) — **rebrand + swap the demo for your own domain**.
+- [docs/](docs/) — architecture, data model, REST API, Swagger guide, skills.
 - [docs/PRD-stickyNote.md](docs/PRD-stickyNote.md) — product requirements (FR ids).
-- [docs/AI-flow/](docs/AI-flow/) — the phase-by-phase workflow used to build this.
 
 ## Extending
 
-- **New backend module** → [docs/skill/creating-a-crud-module.md](docs/skill/creating-a-crud-module.md).
-- **New page** → add a view under `frontend/src/modules/<feature>/views/` and a
-  route in `frontend/src/router/index.js`.
+- **New backend module** → [docs/skill/creating-a-crud-module.md](docs/skill/creating-a-crud-module.md),
+  then register its page in `backend/src/modules/security/catalog.js`.
+- **New page** → a view + a route (`meta.page`) + a `navGroups` entry in `App.vue`.
 - **Theme / colours** → `frontend/src/styles/tokens.css`.
-- **Ports / secrets** → the root `.env` and `backend/.env` (`JWT_SECRET`, …).
+- **Ports / secrets** → the root `.env` and `backend/.env` (`JWT_SECRET`,
+  `MAIL_SECRET`, …).
+- Full repurposing walkthrough: [CUSTOMIZE.md](CUSTOMIZE.md).

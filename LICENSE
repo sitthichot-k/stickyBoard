@@ -1,0 +1,18 @@
+Copyright (c) [YEAR] [YOUR NAME / COMPANY]. All rights reserved.
+
+This is a commercial code template. Replace this file with your chosen end-user
+license before distributing or selling. Recommended: a NON-EXCLUSIVE commercial
+license (so you keep ownership and may sell to many buyers) — for example the
+standard license your marketplace provides (ThemeForest, Gumroad, …), or one
+drafted with a lawyer for high-value deals.
+
+Placeholder terms (edit to fit your sale):
+
+- The buyer MAY use this code in their own projects (personal or commercial).
+- The buyer MAY NOT resell, redistribute, or sublicense the template itself.
+- The author retains all ownership and may keep using and selling it.
+- Provided "AS IS", without warranty of any kind.
+
+Third-party dependencies (Express, Vue, Mongoose, nodemailer, pdf-lib, …) are
+licensed separately under their own terms (mostly MIT). Keep their notices when
+you redistribute. Run `npx license-checker --summary` to review before selling.
