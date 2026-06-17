@@ -40,6 +40,8 @@ Modules:
 - **notification** — `NotificationTemplatesView` (CRUD + seed-defaults) and
   `NotificationMatrixView` (pick a page → toggle each action + choose a
   template); notification api.
+- **camera** — `CamerasView` (admin): manage RTSP cameras and watch the live
+  stream with an `hls.js` player (bearer token attached per request).
 - **logs** — `LogsView` (admin): paginated event log with level/search filters;
   rows expand to show `meta` (e.g. an `app.error` stack trace).
 - **security** — `SecurityView` (admin): the Permission Matrix — pick a group

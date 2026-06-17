@@ -247,6 +247,14 @@ belong to infra monitoring).
 | FR-NOTI-002 | Matrix maps each action → template + on/off; modules call `notify()` (no hardcoded emails). | ✅ |
 | FR-NOTI-003 | System emails (verify/reset) always send, template chosen in Config; seed-defaults with preview. | ✅ |
 
+### 3.22 Cameras (RTSP → HLS) — `Feature: Camera`
+
+| FR | Requirement | Status |
+| --- | --- | --- |
+| FR-CAM-001 | Manage RTSP cameras (CRUD); the credentialed URL is encrypted at rest and never returned. | ✅ |
+| FR-CAM-002 | Server transcodes RTSP → HLS (ffmpeg, on demand + idle-reaped) and plays in-browser via hls.js. | ✅ |
+| FR-CAM-003 | RBAC-gated (`admin-cameras`) + audited; URL only ever comes from the DB (no SSRF). | ✅ |
+
 ## 4. Non-functional requirements
 
 | NFR | Requirement |

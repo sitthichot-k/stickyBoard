@@ -90,6 +90,19 @@ instead of hardcoding emails.
 | GET | `/api/v1/notifications/seed-defaults/preview` | per-event status (`new`/`default`/`edited`/`deleted`) for the reset warning |
 | POST | `/api/v1/notifications/seed-defaults` | reset catalog events' templates + rules to defaults (un-deletes via `deletedAt:null`) |
 
+## Cameras (capability `admin-cameras`)
+
+RTSP cameras streamed to the browser as HLS (ffmpeg on the server). The
+credentialed URL is encrypted at rest and never returned.
+
+| Method | Path | Description |
+| --- | --- | --- |
+| GET | `/api/v1/cameras` | list cameras (no URL — only `name`, `host`, `location`, `enabled`) |
+| POST | `/api/v1/cameras` | add — body `{ name, url (rtsp://…), location?, enabled? }` |
+| PATCH | `/api/v1/cameras/:id` | edit (omit `url` to keep it) |
+| DELETE | `/api/v1/cameras/:id` | delete + stop its stream → `204` |
+| GET | `/api/v1/cameras/:id/hls/:file?` | HLS playlist/segments (ffmpeg starts on demand, reaped when idle) |
+
 ## Settings
 
 | Method | Path | Description |

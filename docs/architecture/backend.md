@@ -24,7 +24,13 @@ Controllers never touch Mongoose directly; they call services. Cross-module
 imports are allowed (e.g. `auth` uses the `user` service).
 
 Modules: `health · auth · user · admin · sheet · note · connection · stroke ·
-setting · log · security · notification`.
+setting · log · security · notification · camera`.
+
+**Cameras** stream RTSP to the browser: `camera/service/stream.service.js` spawns
+**ffmpeg** (in the image) per camera to repackage RTSP → HLS on demand, reaping
+idle processes; `GET /cameras/:id/hls/*` serves the playlist/segments (RBAC-gated,
+path-traversal safe). The URL is decrypted server-side and only ever comes from
+the DB — never the client (no SSRF).
 
 ## Bootstrapping (`routes/`)
 

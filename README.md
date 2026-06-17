@@ -96,6 +96,10 @@ cd backend  && cp .env.example .env && npm install && npm run seed && npm run de
 cd frontend && cp .env.example .env && npm install && npm run dev
 ```
 
+> The **Cameras** feature needs `ffmpeg` on the backend host (bundled in the
+> Docker image; `apt/brew install ffmpeg` for local runs) and network reach to
+> the camera (same LAN or a VPN into it).
+
 ## API
 
 Versioned under `/api/v1`. `health`, `auth/login`, and `auth/register` are

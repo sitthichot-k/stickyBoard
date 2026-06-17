@@ -90,6 +90,21 @@ event (`backend/src/modules/notification/catalog.js`).
 | `enabled` | Boolean | whether the event sends (system events always send) |
 | `templateKey` | String | which template to render |
 
+## Camera
+
+`backend/src/modules/camera/models/camera.model.js` — an RTSP camera streamed to
+the browser as HLS.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `name` | String | required |
+| `location` | String | optional label |
+| `host` | String | `host:port` (no credentials) — for display |
+| `urlEnc` | String | full RTSP URL, **encrypted at rest**; never returned |
+| `enabled` | Boolean | disabled cameras don't stream |
+| `createdBy` | ObjectId (ref User) | who added it |
+| `deletedAt` | Date | soft-delete marker |
+
 ## Setting
 
 `backend/src/modules/setting/models/setting.model.js` — admin-configurable
