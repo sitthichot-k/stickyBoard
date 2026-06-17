@@ -7,6 +7,7 @@ import { requirePermission } from '../../middleware/permission.js';
 const router = Router();
 
 router.get('/', requireAuth, requirePermission('admin-cameras', 'view'), controller.list);
+router.get('/:id/hls/:file?', requireAuth, requirePermission('admin-cameras', 'view'), controller.hls);
 router.post('/', requireAuth, requirePermission('admin-cameras', 'edit'), controller.create);
 router.patch('/:id', requireAuth, requirePermission('admin-cameras', 'edit'), controller.update);
 router.delete('/:id', requireAuth, requirePermission('admin-cameras', 'delete'), controller.remove);

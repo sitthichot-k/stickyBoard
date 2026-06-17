@@ -5,6 +5,8 @@ ARG BACKEND_PORT=8081
 ENV NODE_ENV=production
 ENV PORT=${BACKEND_PORT}
 WORKDIR /app
+# ffmpeg powers the RTSP → HLS camera proxy.
+RUN apk add --no-cache ffmpeg
 COPY package*.json ./
 
 # ---- dev: all deps + hot reload (nodemon). Source is bind-mounted at runtime,
