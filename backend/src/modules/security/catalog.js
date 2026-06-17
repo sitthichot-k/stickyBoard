@@ -64,6 +64,13 @@ export const PAGES = [
     apiPrefixes: ['/api/v1/settings/runtime', '/api/v1/settings/mail'],
   },
   {
+    key: 'admin-cameras',
+    label: 'Cameras',
+    path: '/admin/cameras',
+    group: 'Admin',
+    apiPrefixes: ['/api/v1/cameras'],
+  },
+  {
     key: 'admin-notifications',
     label: 'Notifications',
     path: '/admin/notifications',

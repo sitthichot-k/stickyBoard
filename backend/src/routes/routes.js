@@ -10,6 +10,7 @@ import settingRoutes from '../modules/setting/setting.routes.js';
 import logRoutes from '../modules/log/log.routes.js';
 import securityRoutes from '../modules/security/security.routes.js';
 import notificationRoutes from '../modules/notification/notification.routes.js';
+import cameraRoutes from '../modules/camera/camera.routes.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
@@ -31,5 +32,6 @@ router.use('/admin', requireAuth, adminRoutes);
 router.use('/logs', requireAuth, logRoutes);
 router.use('/security', requireAuth, requireAdmin, securityRoutes);
 router.use('/notifications', notificationRoutes); // per-route requirePermission inside
+router.use('/cameras', cameraRoutes); // per-route requirePermission inside
 
 export default router;
