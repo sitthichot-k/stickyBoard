@@ -31,8 +31,10 @@ setting · log · security · notification`.
 - `routes/server.js` — entry point: connects the DB, starts the HTTP server
   (also ensures the system roles + default permission matrix and starts log
   cleanup), handles graceful shutdown (SIGINT/SIGTERM).
-- `routes/app.js` — assembles the Express app: a request logger, CORS, JSON body
-  parsing, mounts the API under `/api/v1`, then the 404 + error middleware.
+- `routes/app.js` — assembles the Express app: a request logger, security
+  headers, CORS, rate limiting, JSON body parsing, Swagger UI at `/api/docs`
+  (dev), mounts the API under `/api/v1`, then the 404 + error middleware.
+  See [swagger-guide.md](swagger-guide.md).
 - `routes/routes.js` — aggregator: mounts every module router with the right
   auth guards (`requireAuth` / `requireAdmin`).
 - `routes/seed.js` — sample data + seed admin (`npm run seed`).
