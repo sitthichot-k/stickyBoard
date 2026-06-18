@@ -17,8 +17,11 @@ npm-debug.log*
 # Local tooling / agent config
 .claude/
 
-# AI detector — model weights (large, mounted at runtime) + python caches
-ai-detector/models/
+# AI detector — model weights (large, mounted at runtime) + python caches.
+# Keep the folder (+ its README) but never commit the weights themselves.
+ai-detector/models/*
+!ai-detector/models/README.md
+yolov8n.pt
 __pycache__/
 *.pyc
 
