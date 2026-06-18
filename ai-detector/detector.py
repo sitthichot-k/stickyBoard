@@ -43,6 +43,21 @@ NOHELMET_CLASSES = [
     if s.strip()
 ]
 
+# Rider association — only count a bare head as a violation when it belongs to a
+# motorcycle rider, so pedestrians walking past aren't flagged. Motorcycles are
+# found either in the primary model's own output or via a separate COCO model
+# (MOTO_MODEL_PATH, e.g. "yolov8n.pt"). Set REQUIRE_MOTORCYCLE=false to fall back
+# to the naive "any bare head" behaviour.
+REQUIRE_MOTORCYCLE = os.environ.get("REQUIRE_MOTORCYCLE", "true").lower() == "true"
+MOTO_MODEL_PATH = os.environ.get("MOTO_MODEL_PATH", "")  # optional 2nd model that detects motorcycles
+MOTO_CLASSES = [
+    s.strip().lower()
+    for s in os.environ.get("MOTO_CLASSES", "motorcycle,motorbike").split(",")
+    if s.strip()
+]
+ASSOC_MARGIN_X = float(os.environ.get("ASSOC_MARGIN_X", "0.2"))  # horizontal slack as a fraction of moto width
+ASSOC_RISE = float(os.environ.get("ASSOC_RISE", "1.5"))          # how far above the moto (× its height) a rider head may sit
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -55,12 +70,33 @@ def is_no_helmet(name: str) -> bool:
     return any(key in n for key in NOHELMET_CLASSES)
 
 
+def is_motorcycle(name: str) -> bool:
+    n = name.lower()
+    return any(key in n for key in MOTO_CLASSES)
+
+
+def head_on_motorcycle(head_xyxy, motos) -> bool:
+    """True if a bare-head box belongs to a rider: its centre sits within a
+    motorcycle's horizontal span (± margin) and above the motorcycle's base
+    (riders sit above and roughly over the bike)."""
+    hcx = (head_xyxy[0] + head_xyxy[2]) / 2
+    hcy = (head_xyxy[1] + head_xyxy[3]) / 2
+    for mx1, my1, mx2, my2 in motos:
+        w, h = mx2 - mx1, my2 - my1
+        if w <= 0 or h <= 0:
+            continue
+        if (mx1 - ASSOC_MARGIN_X * w) <= hcx <= (mx2 + ASSOC_MARGIN_X * w) and (my1 - ASSOC_RISE * h) <= hcy <= my2:
+            return True
+    return False
+
+
 class CameraWorker(threading.Thread):
     """Reads one RTSP stream, detects no-helmet riders, and reports them."""
 
-    def __init__(self, model: YOLO, cam: dict):
+    def __init__(self, model: YOLO, cam: dict, moto_model: YOLO = None):
         super().__init__(daemon=True)
         self.model = model
+        self.moto_model = moto_model  # optional separate motorcycle detector
         self.cam_id = cam["id"]
         self.name = cam.get("name", self.cam_id)
         self.rtsp_url = cam["rtspUrl"]
@@ -129,6 +165,18 @@ class CameraWorker(threading.Thread):
             cap.release()
         log.info("[%s] worker stopped", self.name)
 
+    def _detect_motos(self, frame):
+        """Motorcycle boxes from the optional secondary model (xyxy list)."""
+        try:
+            res = self.moto_model.predict(frame, conf=CONF_THRESHOLD, verbose=False)
+        except Exception as e:
+            log.warning("[%s] moto inference error: %s", self.name, e)
+            return []
+        r = res[0]
+        if r.boxes is None:
+            return []
+        return [box.xyxy[0].tolist() for box in r.boxes if is_motorcycle(r.names[int(box.cls)])]
+
     def _process(self, frame):
         try:
             results = self.model.track(
@@ -141,15 +189,30 @@ class CameraWorker(threading.Thread):
         names = r.names
         if r.boxes is None:
             return
+
+        # Collect bare heads + any motorcycles the primary model itself emits.
+        heads = []  # (conf, track_id, xyxy)
+        motos = []  # xyxy
         for box in r.boxes:
             name = names[int(box.cls)]
-            if not is_no_helmet(name):
+            if is_no_helmet(name):
+                track_id = int(box.id) if box.id is not None else None
+                heads.append((float(box.conf), track_id, box.xyxy[0].tolist()))
+            elif is_motorcycle(name):
+                motos.append(box.xyxy[0].tolist())
+
+        if not heads:
+            return
+        if REQUIRE_MOTORCYCLE and self.moto_model is not None:
+            motos.extend(self._detect_motos(frame))
+
+        for conf, track_id, xyxy in heads:
+            # Skip bare heads that aren't on a motorcycle (e.g. pedestrians).
+            if REQUIRE_MOTORCYCLE and not head_on_motorcycle(xyxy, motos):
                 continue
-            conf = float(box.conf)
-            track_id = int(box.id) if box.id is not None else None
             if track_id is not None and not self._should_report(track_id):
                 continue
-            x1, y1, x2, y2 = box.xyxy[0].tolist()
+            x1, y1, x2, y2 = xyxy
             self._report(frame, conf, track_id, (x1, y1, x2 - x1, y2 - y1))
 
 
@@ -175,6 +238,25 @@ def main():
     model = YOLO(MODEL_PATH)
     log.info("Model classes: %s", model.names)
 
+    # Optional secondary model for motorcycle detection (rider association).
+    moto_model = None
+    primary_has_moto = any(is_motorcycle(n) for n in model.names.values())
+    if REQUIRE_MOTORCYCLE:
+        if MOTO_MODEL_PATH:
+            log.info("Loading motorcycle model %s", MOTO_MODEL_PATH)
+            moto_model = YOLO(MOTO_MODEL_PATH)
+        elif primary_has_moto:
+            log.info("Using the primary model's own motorcycle class for rider association")
+        else:
+            log.warning(
+                "REQUIRE_MOTORCYCLE is on but no motorcycle source is available "
+                "(primary model has no motorcycle class and MOTO_MODEL_PATH is unset) "
+                "— NO violations will be reported. Set MOTO_MODEL_PATH=yolov8n.pt or "
+                "REQUIRE_MOTORCYCLE=false."
+            )
+    else:
+        log.info("Rider association OFF — any bare head counts (pedestrians may be flagged)")
+
     workers = {}  # cam_id -> CameraWorker
     while True:
         try:
@@ -189,7 +271,7 @@ def main():
         # Start workers for newly-enabled cameras.
         for cam_id, cam in wanted.items():
             if cam_id not in workers or not workers[cam_id].is_alive():
-                w = CameraWorker(model, cam)
+                w = CameraWorker(model, cam, moto_model)
                 w.start()
                 workers[cam_id] = w
 

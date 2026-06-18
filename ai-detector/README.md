@@ -21,7 +21,24 @@ ai-detector ──────────────────────�
 - ByteTrack gives each rider a stable `trackId`; the same rider isn't reported
   again within `LOCAL_DEDUP_SEC` (the backend also de-dupes for 60s).
 - A detection counts as a violation when a box's class name matches
-  `NOHELMET_CLASSES` and confidence ≥ `CONF_THRESHOLD`.
+  `NOHELMET_CLASSES`, confidence ≥ `CONF_THRESHOLD`, **and** (with rider
+  association on) the head belongs to a motorcycle rider.
+
+## Rider association (avoid flagging pedestrians)
+
+A bare-headed **pedestrian** would otherwise be reported as a violation. With
+`REQUIRE_MOTORCYCLE=true` (default) a bare head is only flagged when it sits on a
+motorcycle — its centre falls within a motorcycle box's horizontal span (±
+`ASSOC_MARGIN_X`) and above its base (up to `ASSOC_RISE`× the box height).
+
+Motorcycles are sourced from:
+- the **primary model itself**, if it has a `motorcycle`/`motorbike` class, or
+- a **separate model** at `MOTO_MODEL_PATH` — e.g. `yolov8n.pt` (COCO, which has
+  `motorcycle`; ultralytics auto-downloads it on first use).
+
+If association is on but neither source exists, **nothing is reported** (a clear
+warning is logged at startup). Set `MOTO_MODEL_PATH=yolov8n.pt`, use a model with
+a motorcycle class, or set `REQUIRE_MOTORCYCLE=false`.
 
 ## Model
 

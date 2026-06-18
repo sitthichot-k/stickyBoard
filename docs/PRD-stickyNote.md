@@ -274,7 +274,7 @@ model (weight path configurable via env).
 
 | FR | Requirement | Status |
 | --- | --- | --- |
-| FR-AI-001 | A standalone Python AI service pulls RTSP frames from cameras with `aiEnabled`, runs YOLO to detect riders + helmet state, samples frames, and tracks objects (ByteTrack) to dedupe repeat violations of the same rider. | ✅ |
+| FR-AI-001 | A standalone Python AI service pulls RTSP frames from cameras with `aiEnabled`, runs YOLO to detect riders + helmet state, samples frames, and tracks objects (ByteTrack) to dedupe repeat violations of the same rider. A bare head is only counted when associated with a motorcycle (configurable), so pedestrians aren't flagged. | ✅ |
 | FR-AI-002 | On a `no_helmet` detection it captures a full-frame snapshot and posts the violation to `POST /violations/ingest` (service-token auth); the backend persists a `Violation` record + the image on a durable volume (60s backstop de-dup). | ✅ |
 | FR-AI-003 | `Violation` model + REST: list/filter (camera / date / status), view the snapshot, and review/dismiss. RBAC-gated (`admin-violations`), audited, soft-deletable per the base-service pattern. | ✅ |
 | FR-AI-004 | Camera gains an `aiEnabled` flag (per-camera toggle in the Cameras page); only enabled cameras are processed. | ✅ |

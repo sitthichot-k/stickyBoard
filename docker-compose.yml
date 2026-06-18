@@ -97,6 +97,9 @@ services:
       NOHELMET_CLASSES: ${NOHELMET_CLASSES:-no-helmet,no_helmet,without helmet,nohelmet}
       CONF_THRESHOLD: ${CONF_THRESHOLD:-0.5}
       SAMPLE_FPS: ${SAMPLE_FPS:-3}
+      # Rider association — only flag bare heads on a motorcycle (skip pedestrians).
+      REQUIRE_MOTORCYCLE: ${REQUIRE_MOTORCYCLE:-true}
+      MOTO_MODEL_PATH: ${MOTO_MODEL_PATH:-}
     volumes:
       - ./ai-detector/models:/models:ro
     depends_on:
