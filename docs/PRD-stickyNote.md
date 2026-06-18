@@ -182,7 +182,7 @@ Admin-only analytics overview.
 | --- | --- | --- |
 | FR-DASH-001 | `GET /admin/stats` returns counts, top sheets by notes, and a 14-day activity series. | ✅ |
 | FR-DASH-002 | Admin Dashboard page: KPI cards + charts (in the Admin sidebar group). | ✅ |
-| FR-DASH-003 | `/admin/stats` includes a helmet-violation summary (today / 7-day / total / unreviewed counts, a 14-day trend, top cameras by violations); the Dashboard renders matching KPI cards + charts. | ⬜ |
+| FR-DASH-003 | `/admin/stats` includes a helmet-violation summary (today / 7-day / total / unreviewed counts, a 14-day trend, top cameras by violations); the Dashboard renders matching KPI cards + charts. | ✅ |
 
 > Build order: PDF tools (FR-PDF / FR-SCAN) first, then auth-gated admin
 > features (FR-ADMIN / FR-DASH). See the roadmap discussion.
@@ -274,12 +274,12 @@ model (weight path configurable via env).
 
 | FR | Requirement | Status |
 | --- | --- | --- |
-| FR-AI-001 | A standalone Python AI service pulls RTSP frames from cameras with `aiEnabled`, runs YOLO to detect riders + helmet state, samples frames, and tracks objects to dedupe repeat violations of the same rider. | ⬜ |
-| FR-AI-002 | On a `no_helmet` detection it captures a full-frame snapshot (+ thumbnail) and posts the violation to `POST /violations/ingest` (service-token auth); the backend persists a `Violation` record + the image files on a durable volume. | ⬜ |
-| FR-AI-003 | `Violation` model + REST: list/filter (camera / date / status), view the snapshot, and review/dismiss. RBAC-gated (`admin-violations`), audited, soft-deletable per the base-service pattern. | ⬜ |
-| FR-AI-004 | Camera gains an `aiEnabled` flag (per-camera toggle in the Cameras page); only enabled cameras are processed. | ⬜ |
-| FR-AI-005 | The Python AI service is wired into Docker Compose (its own service); the helmet model weight path is configurable (env), not hardcoded. | ⬜ |
-| FR-AI-006 | Snapshot retention: violation images are purged past a configurable window (disk + privacy), mirroring log retention. | ⬜ |
+| FR-AI-001 | A standalone Python AI service pulls RTSP frames from cameras with `aiEnabled`, runs YOLO to detect riders + helmet state, samples frames, and tracks objects (ByteTrack) to dedupe repeat violations of the same rider. | ✅ |
+| FR-AI-002 | On a `no_helmet` detection it captures a full-frame snapshot and posts the violation to `POST /violations/ingest` (service-token auth); the backend persists a `Violation` record + the image on a durable volume (60s backstop de-dup). | ✅ |
+| FR-AI-003 | `Violation` model + REST: list/filter (camera / date / status), view the snapshot, and review/dismiss. RBAC-gated (`admin-violations`), audited, soft-deletable per the base-service pattern. | ✅ |
+| FR-AI-004 | Camera gains an `aiEnabled` flag (per-camera toggle in the Cameras page); only enabled cameras are processed. | ✅ |
+| FR-AI-005 | The Python AI service is wired into Docker Compose (its own `ai` profile); the helmet model weight path + "no helmet" class names are configurable (env), not hardcoded. | ✅ |
+| FR-AI-006 | Snapshot retention: violation records + images are purged past a configurable window (disk + privacy), mirroring log retention. | ✅ |
 
 > Build order (AI-flow phases): **Backend** (Violation model/service/routes,
 > ingest endpoint + service token, `aiEnabled`, storage, stats, RBAC catalog) →

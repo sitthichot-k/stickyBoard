@@ -24,13 +24,23 @@ Controllers never touch Mongoose directly; they call services. Cross-module
 imports are allowed (e.g. `auth` uses the `user` service).
 
 Modules: `health · auth · user · admin · sheet · note · connection · stroke ·
-setting · log · security · notification · camera`.
+setting · log · security · notification · camera · violation`.
 
 **Cameras** stream RTSP to the browser: `camera/service/stream.service.js` spawns
 **ffmpeg** (in the image) per camera to repackage RTSP → HLS on demand, reaping
 idle processes; `GET /cameras/:id/hls/*` serves the playlist/segments (RBAC-gated,
 path-traversal safe). The URL is decrypted server-side and only ever comes from
 the DB — never the client (no SSRF).
+
+**Violations** (AI helmet detection, phase 1) — a **separate Python service**
+(`ai-detector/`, an `ai`-profile Compose service) does the inference; the backend
+never runs YOLO. Two service-token surfaces under `/violations` serve the
+detector: `GET /sources` (cameras where `aiEnabled`, with their decrypted RTSP
+URL) and `POST /ingest` (raw JPEG body + metadata in the query → a `Violation` +
+a snapshot written to a durable volume, with a 60s per-track de-dup). The
+human-facing list / review / snapshot / delete routes are RBAC-gated
+(`admin-violations`) and audited; old records + images are purged on a retention
+interval (`VIOLATION_RETENTION_DAYS`).
 
 ## Bootstrapping (`routes/`)
 

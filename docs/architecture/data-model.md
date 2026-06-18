@@ -102,8 +102,35 @@ the browser as HLS.
 | `host` | String | `host:port` (no credentials) — for display |
 | `urlEnc` | String | full RTSP URL, **encrypted at rest**; never returned |
 | `enabled` | Boolean | disabled cameras don't stream |
+| `aiEnabled` | Boolean | run AI helmet detection on this camera (default false) |
 | `createdBy` | ObjectId (ref User) | who added it |
 | `deletedAt` | Date | soft-delete marker |
+
+## Violation
+
+`backend/src/modules/violation/models/violation.model.js` — an AI-detected
+traffic violation (phase 1: helmet only). The snapshot image lives on a durable
+disk volume; only its filename is stored here and it's served via
+`GET /violations/:id/snapshot` (the raw path is hidden from JSON).
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `cameraId` | ObjectId (ref Camera) | — | required — the source camera |
+| `type` | enum `no_helmet` | `no_helmet` | violation kind (room to grow) |
+| `snapshotPath` | String | — | filename under the snapshot dir (hidden in `toJSON`) |
+| `thumbPath` | String | `null` | reserved for a future thumbnail |
+| `confidence` | Number | `null` | model confidence 0–1 |
+| `trackId` | String | `''` | tracker id from the AI service (de-dup key) |
+| `bbox` | [Number] | — | `[x, y, w, h]` in frame px |
+| `detectedAt` | Date | now | when the violation occurred |
+| `status` | enum new/reviewed/dismissed | `new` | review state |
+| `reviewedBy` | ObjectId (ref User) | `null` | who reviewed it |
+| `reviewedAt` | Date | `null` | when reviewed |
+| `note` | String | `''` | reviewer note (≤500) |
+| `deletedAt` | Date | `null` | soft-delete marker |
+
+Retention: records older than `VIOLATION_RETENTION_DAYS` are hard-deleted (with
+their image files) by a daily interval job, mirroring log retention.
 
 ## Setting
 
