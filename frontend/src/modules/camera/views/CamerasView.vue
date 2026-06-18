@@ -93,12 +93,20 @@ function startPlayer() {
 
 function openNew() {
   editing.value = null;
-  form.value = { name: '', location: '', url: '', enabled: true, aiEnabled: false };
+  form.value = { name: '', location: '', url: '', enabled: true, aiEnabled: false, gate: 'none', countVehicles: false };
   showEditor.value = true;
 }
 function openEdit(c) {
   editing.value = c.id;
-  form.value = { name: c.name, location: c.location || '', url: '', enabled: c.enabled, aiEnabled: !!c.aiEnabled };
+  form.value = {
+    name: c.name,
+    location: c.location || '',
+    url: '',
+    enabled: c.enabled,
+    aiEnabled: !!c.aiEnabled,
+    gate: c.gate || 'none',
+    countVehicles: !!c.countVehicles,
+  };
   showEditor.value = true;
 }
 async function save() {
@@ -111,6 +119,8 @@ async function save() {
       location: form.value.location,
       enabled: form.value.enabled,
       aiEnabled: form.value.aiEnabled,
+      gate: form.value.gate,
+      countVehicles: form.value.countVehicles,
     };
     if (form.value.url.trim()) body.url = form.value.url.trim();
     if (editing.value) await api.updateCamera(editing.value, body);
@@ -185,6 +195,9 @@ async function remove(c) {
               <span class="text-muted">{{ c.host }}<template v-if="c.location"> · {{ c.location }}</template></span>
               <span v-if="!c.enabled" class="badge badge--off">disabled</span>
               <span v-if="c.aiEnabled" class="badge badge--ai">🪖 AI</span>
+              <span v-if="c.gate && c.gate !== 'none'" class="badge badge--gate">
+                {{ c.gate === 'entrance' ? '↧ in' : '↥ out' }}<template v-if="c.countVehicles"> · count</template>
+              </span>
             </div>
             <div class="cam__actions">
               <BaseButton size="sm" :disabled="!c.enabled" @click="view(c)">View</BaseButton>
@@ -213,6 +226,18 @@ async function remove(c) {
         <label class="field field--row">
           <input v-model="form.aiEnabled" type="checkbox" />
           <span>AI helmet detection</span>
+        </label>
+        <label class="field">
+          <span>Gate (vehicle counting)</span>
+          <select v-model="form.gate" class="control">
+            <option value="none">Not a gate</option>
+            <option value="entrance">Entrance (in)</option>
+            <option value="exit">Exit (out)</option>
+          </select>
+        </label>
+        <label v-if="form.gate !== 'none'" class="field field--row">
+          <input v-model="form.countVehicles" type="checkbox" />
+          <span>Count vehicles here (the gate's counter — one per gate)</span>
         </label>
         <div class="modal__actions">
           <BaseButton variant="ghost" @click="showEditor = false">Cancel</BaseButton>
@@ -346,6 +371,16 @@ async function remove(c) {
   border-radius: 999px;
   background: var(--color-primary-soft);
   color: var(--color-primary);
+  width: fit-content;
+}
+.badge--gate {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--color-info-soft, var(--color-bg));
+  color: var(--color-info);
   width: fit-content;
 }
 .link {

@@ -77,6 +77,27 @@ const maxVio = computed(() => Math.max(1, ...vioTrend.value.map((t) => t.count))
 const topCameras = computed(() => vio.value?.topCameras ?? []);
 const maxVioCam = computed(() => Math.max(1, ...topCameras.value.map((c) => c.count)));
 
+/* ---- Vehicle counts (in/out) ---- */
+const VEHICLE_TYPES = ['motorcycle', 'car', 'truck', 'bus'];
+const vc = computed(() => stats.value?.vehicleCounts ?? null);
+const vcCards = computed(() => {
+  const v = vc.value;
+  if (!v) return [];
+  return [
+    { label: 'In · today', value: v.today.in },
+    { label: 'Out · today', value: v.today.out },
+    { label: 'In · total', value: v.totals.in },
+    { label: 'Out · total', value: v.totals.out },
+  ];
+});
+const vcByType = computed(() =>
+  vc.value
+    ? VEHICLE_TYPES.map((t) => ({ type: t, in: vc.value.byType.entrance[t] ?? 0, out: vc.value.byType.exit[t] ?? 0 }))
+    : [],
+);
+const vcTrend = computed(() => vc.value?.trend ?? []);
+const maxVcTrend = computed(() => Math.max(1, ...vcTrend.value.map((t) => t.in + t.out)));
+
 /* ---- Performance (from api.request logs) ---- */
 const perfCards = computed(() => {
   const p = perf.value;
@@ -198,6 +219,48 @@ function fmtUptime(sec) {
               <span class="bar__name">{{ c.name }}</span>
               <span class="bar__track"><span class="bar__fill" :style="{ width: `${(c.count / maxVioCam) * 100}%` }" /></span>
               <span class="bar__count">{{ c.count }}</span>
+            </div>
+          </section>
+        </div>
+      </template>
+
+      <!-- Vehicle counts (in/out) -->
+      <template v-if="vc">
+        <h2 class="section-title">🚗 Vehicle counts · in / out</h2>
+        <div class="kpis">
+          <div v-for="k in vcCards" :key="k.label" class="kpi">
+            <span class="kpi__value">{{ k.value }}</span>
+            <span class="kpi__label">{{ k.label }}</span>
+          </div>
+        </div>
+
+        <div class="grid">
+          <!-- By type -->
+          <section class="panel">
+            <h2 class="panel__title">By type (in / out)</h2>
+            <div v-for="r in vcByType" :key="r.type" class="vc-row">
+              <span class="vc-row__type">{{ r.type }}</span>
+              <span class="vc-row__val">↧ {{ r.in }}</span>
+              <span class="vc-row__val">↥ {{ r.out }}</span>
+            </div>
+          </section>
+
+          <!-- Traffic trend -->
+          <section class="panel">
+            <h2 class="panel__title">Traffic · last 14 days (in + out)</h2>
+            <div class="tp">
+              <span
+                v-for="(t, i) in vcTrend"
+                :key="i"
+                class="tp__bar"
+                :style="{ height: `${((t.in + t.out) / maxVcTrend) * 100}%` }"
+                :title="`${t.date} · in ${t.in} / out ${t.out}`"
+              />
+            </div>
+            <div class="chart__axis text-muted">
+              <span>{{ vcTrend.length ? dayLabel(vcTrend[0].date) : '' }}</span>
+              <span>peak {{ maxVcTrend }}</span>
+              <span>{{ vcTrend.length ? dayLabel(vcTrend[vcTrend.length - 1].date) : '' }}</span>
             </div>
           </section>
         </div>
@@ -398,6 +461,29 @@ function fmtUptime(sec) {
   text-align: right;
   font-weight: 700;
   font-size: var(--font-size-sm);
+}
+
+/* ---- Vehicle counts ---- */
+.vc-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.vc-row:last-child {
+  border-bottom: none;
+}
+.vc-row__type {
+  flex: 1;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.vc-row__val {
+  width: 64px;
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---- Performance section ---- */
