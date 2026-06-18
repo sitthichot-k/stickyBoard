@@ -18,8 +18,11 @@ ai-detector ──────────────────────�
 
 - Cameras are re-synced every `SOURCES_REFRESH_SEC`, so toggling **AI helmet
   detection** on a camera takes effect without a restart.
-- ByteTrack gives each rider a stable `trackId`; the same rider isn't reported
-  again within `LOCAL_DEDUP_SEC` (the backend also de-dupes for 60s).
+- **Each enabled camera loads its own model copy** so ByteTrack keeps an
+  independent tracker per camera (a shared model would mix frames across cameras
+  and churn track IDs). Stable `trackId`s mean the same rider isn't reported again
+  within `LOCAL_DEDUP_SEC` (the backend also de-dupes for 60s). Trade-off: RAM
+  scales with the number of `aiEnabled` cameras.
 - A detection counts as a violation when a box's class name matches
   `NOHELMET_CLASSES`, confidence ≥ `CONF_THRESHOLD`, **and** (with rider
   association on) the head belongs to a motorcycle rider.

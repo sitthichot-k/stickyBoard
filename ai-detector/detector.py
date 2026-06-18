@@ -150,10 +150,15 @@ def head_on_motorcycle(head_xyxy, motos) -> bool:
 class CameraWorker(threading.Thread):
     """Reads one RTSP stream, detects no-helmet riders, and reports them."""
 
-    def __init__(self, model: YOLO, cam: dict, moto_model: YOLO = None):
+    def __init__(self, cam: dict, model_path: str, moto_path: str = None):
         super().__init__(daemon=True)
-        self.model = model
-        self.moto_model = moto_model  # optional separate motorcycle detector
+        # Each worker loads its OWN model so ByteTrack (persist=True) keeps an
+        # independent tracker per camera — a single shared model would mix frames
+        # across cameras, churn track IDs, and break the per-rider de-dup.
+        self.model_path = model_path
+        self.moto_path = moto_path  # optional separate motorcycle detector
+        self.model = None
+        self.moto_model = None
         self.cam_id = cam["id"]
         self.name = cam.get("name", self.cam_id)
         self.rtsp_url = cam["rtspUrl"]
@@ -201,6 +206,10 @@ class CameraWorker(threading.Thread):
             log.warning("[%s] ingest error: %s", self.name, e)
 
     def run(self):
+        log.info("[%s] loading model(s)", self.name)
+        self.model = YOLO(self.model_path)
+        if self.moto_path:
+            self.moto_model = YOLO(self.moto_path)
         log.info("[%s] worker starting", self.name)
         interval = 1.0 / SAMPLE_FPS if SAMPLE_FPS > 0 else 0
         while not self.stop_event.is_set():
@@ -382,17 +391,21 @@ def main():
         log.error("Model not found at %s — set MODEL_PATH to a helmet YOLO weight.", MODEL_PATH)
         sys.exit(1)
 
-    log.info("Loading model %s", MODEL_PATH)
-    model = YOLO(MODEL_PATH)
-    log.info("Model classes: %s", model.names)
+    # Load once just to inspect classes + decide the motorcycle source; each
+    # camera worker loads its own copy for an independent tracker.
+    log.info("Loading model %s (inspect)", MODEL_PATH)
+    ref = YOLO(MODEL_PATH)
+    log.info("Model classes: %s", ref.names)
+    primary_has_moto = any(is_motorcycle(n) for n in ref.names.values())
+    del ref
 
-    # Optional secondary model for motorcycle detection (rider association).
-    moto_model = None
-    primary_has_moto = any(is_motorcycle(n) for n in model.names.values())
+    moto_path = None
     if REQUIRE_MOTORCYCLE:
         if MOTO_MODEL_PATH:
-            log.info("Loading motorcycle model %s", MOTO_MODEL_PATH)
-            moto_model = YOLO(MOTO_MODEL_PATH)
+            moto_path = MOTO_MODEL_PATH
+            log.info("Pre-fetching motorcycle model %s", MOTO_MODEL_PATH)
+            YOLO(MOTO_MODEL_PATH)  # cache/download the weight once before workers load it
+            log.info("Each camera loads its own model + motorcycle model")
         elif primary_has_moto:
             log.info("Using the primary model's own motorcycle class for rider association")
         else:
@@ -422,7 +435,7 @@ def main():
         # Start workers for newly-enabled cameras.
         for cam_id, cam in wanted.items():
             if cam_id not in workers or not workers[cam_id].is_alive():
-                w = CameraWorker(model, cam, moto_model)
+                w = CameraWorker(cam, MODEL_PATH, moto_path)
                 w.start()
                 workers[cam_id] = w
 
