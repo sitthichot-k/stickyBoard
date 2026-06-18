@@ -111,6 +111,16 @@ cameras and streams each one's frames with **every detection drawn**:
 Snapshots are still saved **only** for red violations — the overlay is just the
 live view.
 
+## Vehicle counting (in/out)
+
+A camera tagged with a **gate** (`entrance`/`exit`) and marked as its gate's
+**counter** (`countVehicles`) is processed for counting: the detector tracks
+vehicles (ByteTrack) and posts one count per new track to
+`POST {API_URL}/vehicle-counts/ingest` with `{ cameraId, gate, type, trackId }`
+(type ∈ motorcycle/car/truck/bus, from the COCO `MOTO_MODEL_PATH` model). Counting
+needs that vehicle model set. A camera can be a counter only, a helmet detector
+only, or both. Totals (in/out by type) show on the admin dashboard.
+
 It also logs one line per frame that has detections:
 `[Cam] heads=2 motos=1 reported=1`. Use this to pinpoint why nothing fires.
 

@@ -132,6 +132,20 @@ def is_helmet(name: str) -> bool:
     return any(key in n for key in HELMET_CLASSES)
 
 
+# Vehicle class name -> one of the counted types (anything else is ignored).
+COUNT_TYPE_MAP = {
+    "motorcycle": "motorcycle",
+    "motorbike": "motorcycle",
+    "car": "car",
+    "truck": "truck",
+    "bus": "bus",
+}
+
+
+def count_type(name: str):
+    return COUNT_TYPE_MAP.get(name.lower())
+
+
 def head_on_motorcycle(head_xyxy, motos) -> bool:
     """True if a bare-head box belongs to a rider: its centre sits within a
     motorcycle's horizontal span (± margin) and above the motorcycle's base
@@ -150,20 +164,24 @@ def head_on_motorcycle(head_xyxy, motos) -> bool:
 class CameraWorker(threading.Thread):
     """Reads one RTSP stream, detects no-helmet riders, and reports them."""
 
-    def __init__(self, cam: dict, model_path: str, moto_path: str = None):
+    def __init__(self, cam: dict, model_path: str, vehicle_path: str = None):
         super().__init__(daemon=True)
         # Each worker loads its OWN model so ByteTrack (persist=True) keeps an
         # independent tracker per camera — a single shared model would mix frames
-        # across cameras, churn track IDs, and break the per-rider de-dup.
+        # across cameras, churn track IDs, and break the per-rider/-vehicle de-dup.
         self.model_path = model_path
-        self.moto_path = moto_path  # optional separate motorcycle detector
-        self.model = None
-        self.moto_model = None
+        self.vehicle_path = vehicle_path  # COCO model for motorcycle assoc + counting
+        self.model = None          # helmet model (loaded only when aiEnabled)
+        self.vehicle_model = None  # vehicle model (assoc and/or counting)
         self.cam_id = cam["id"]
         self.name = cam.get("name", self.cam_id)
         self.rtsp_url = cam["rtspUrl"]
+        self.ai_enabled = bool(cam.get("aiEnabled"))
+        self.gate = cam.get("gate", "none")
+        self.count_vehicles = bool(cam.get("countVehicles")) and self.gate in ("entrance", "exit")
         self.stop_event = threading.Event()
-        self._last_report = {}  # trackId -> last report timestamp
+        self._last_report = {}  # trackId -> last report timestamp (helmet de-dup)
+        self._counted = set()   # vehicle track ids already counted
         self.latest_jpeg = None  # most recent annotated frame (debug viewer)
         self._frame_lock = threading.Lock()
 
@@ -206,10 +224,16 @@ class CameraWorker(threading.Thread):
             log.warning("[%s] ingest error: %s", self.name, e)
 
     def run(self):
-        log.info("[%s] loading model(s)", self.name)
-        self.model = YOLO(self.model_path)
-        if self.moto_path:
-            self.moto_model = YOLO(self.moto_path)
+        log.info("[%s] loading model(s) (helmet=%s, count=%s, gate=%s)",
+                 self.name, self.ai_enabled, self.count_vehicles, self.gate)
+        if self.ai_enabled:
+            self.model = YOLO(self.model_path)
+        # The vehicle model is needed for counting, and for rider association.
+        need_vehicle = self.count_vehicles or (self.ai_enabled and REQUIRE_MOTORCYCLE)
+        if need_vehicle and self.vehicle_path:
+            self.vehicle_model = YOLO(self.vehicle_path)
+        if self.count_vehicles and self.vehicle_model is None:
+            log.warning("[%s] countVehicles set but no vehicle model (set MOTO_MODEL_PATH)", self.name)
         log.info("[%s] worker starting", self.name)
         interval = 1.0 / SAMPLE_FPS if SAMPLE_FPS > 0 else 0
         while not self.stop_event.is_set():
@@ -234,9 +258,9 @@ class CameraWorker(threading.Thread):
         log.info("[%s] worker stopped", self.name)
 
     def _detect_vehicles(self, frame):
-        """[(name, xyxy)] of vehicles from the optional secondary model."""
+        """[(name, xyxy)] of vehicles via predict (rider association / overlay)."""
         try:
-            res = self.moto_model.predict(frame, conf=CONF_THRESHOLD, verbose=False)
+            res = self.vehicle_model.predict(frame, conf=CONF_THRESHOLD, verbose=False)
         except Exception as e:
             log.warning("[%s] vehicle inference error: %s", self.name, e)
             return []
@@ -245,37 +269,79 @@ class CameraWorker(threading.Thread):
             return []
         return [(r.names[int(b.cls)], b.xyxy[0].tolist()) for b in r.boxes if is_vehicle(r.names[int(b.cls)])]
 
-    def _process(self, frame):
+    def _track_vehicles(self, frame):
+        """[(count_type, track_id, xyxy)] of vehicles via track (counting)."""
         try:
-            results = self.model.track(
+            res = self.vehicle_model.track(
                 frame, persist=True, conf=CONF_THRESHOLD, tracker="bytetrack.yaml", verbose=False
             )
-        except Exception as e:  # inference must never kill the worker
-            log.warning("[%s] inference error: %s", self.name, e)
-            return
-        r = results[0]
-        names = r.names
+        except Exception as e:
+            log.warning("[%s] vehicle track error: %s", self.name, e)
+            return []
+        r = res[0]
         if r.boxes is None:
-            return
+            return []
+        out = []
+        for b in r.boxes:
+            vt = count_type(r.names[int(b.cls)])
+            if vt is None:
+                continue
+            tid = int(b.id) if b.id is not None else None
+            out.append((vt, tid, b.xyxy[0].tolist()))
+        return out
 
-        # Split the primary model's detections into the three overlay groups.
+    def _report_count(self, vtype, track_id):
+        try:
+            res = requests.post(
+                f"{API_URL}/vehicle-counts/ingest",
+                json={"cameraId": self.cam_id, "gate": self.gate, "type": vtype, "trackId": str(track_id)},
+                headers={"X-Service-Token": SERVICE_TOKEN},
+                timeout=10,
+            )
+            if res.status_code in (200, 201):
+                log.info("[%s] counted %s (%s) track=%s", self.name, vtype, self.gate, track_id)
+            else:
+                log.warning("[%s] count ingest failed %s: %s", self.name, res.status_code, res.text[:200])
+        except requests.RequestException as e:
+            log.warning("[%s] count ingest error: %s", self.name, e)
+
+    def _process(self, frame):
         heads = []     # (conf, track_id, xyxy)  — no-helmet
         helmets = []   # (conf, xyxy)            — helmet worn
-        vehicles = []  # (name, xyxy)            — any vehicle (green)
-        for box in r.boxes:
-            name = names[int(box.cls)]
-            xyxy = box.xyxy[0].tolist()
-            if is_no_helmet(name):
-                track_id = int(box.id) if box.id is not None else None
-                heads.append((float(box.conf), track_id, xyxy))
-            elif is_helmet(name):
-                helmets.append((float(box.conf), xyxy))
-            elif is_vehicle(name):
-                vehicles.append((name, xyxy))
+        vehicles = []  # (name, xyxy)            — any vehicle (green overlay)
 
-        # Secondary vehicle model: run it when we need to associate a head, or
-        # whenever the live overlay is on (so every vehicle is drawn each frame).
-        if self.moto_model is not None and (DEBUG_VIEW or (REQUIRE_MOTORCYCLE and heads)):
+        # Helmet detection — only on aiEnabled cameras.
+        if self.ai_enabled and self.model is not None:
+            try:
+                r = self.model.track(
+                    frame, persist=True, conf=CONF_THRESHOLD, tracker="bytetrack.yaml", verbose=False
+                )[0]
+            except Exception as e:  # inference must never kill the worker
+                log.warning("[%s] inference error: %s", self.name, e)
+                r = None
+            if r is not None and r.boxes is not None:
+                names = r.names
+                for box in r.boxes:
+                    name = names[int(box.cls)]
+                    xyxy = box.xyxy[0].tolist()
+                    if is_no_helmet(name):
+                        tid = int(box.id) if box.id is not None else None
+                        heads.append((float(box.conf), tid, xyxy))
+                    elif is_helmet(name):
+                        helmets.append((float(box.conf), xyxy))
+                    elif is_vehicle(name):
+                        vehicles.append((name, xyxy))
+
+        # Vehicle counting — track vehicles and count each new track once. The
+        # tracked boxes also feed rider association + the overlay.
+        if self.count_vehicles and self.vehicle_model is not None:
+            for vt, tid, xyxy in self._track_vehicles(frame):
+                vehicles.append((vt, xyxy))
+                if tid is not None and tid not in self._counted:
+                    self._counted.add(tid)
+                    self._report_count(vt, tid)
+        elif self.vehicle_model is not None and (DEBUG_VIEW or (self.ai_enabled and REQUIRE_MOTORCYCLE and heads)):
+            # Association/overlay only — a cheaper predict is enough.
             vehicles += self._detect_vehicles(frame)
 
         motos = [xyxy for (name, xyxy) in vehicles if is_motorcycle(name)]
@@ -403,23 +469,19 @@ def main():
     primary_has_moto = any(is_motorcycle(n) for n in ref.names.values())
     del ref
 
-    moto_path = None
-    if REQUIRE_MOTORCYCLE:
-        if MOTO_MODEL_PATH:
-            moto_path = MOTO_MODEL_PATH
-            log.info("Pre-fetching motorcycle model %s", MOTO_MODEL_PATH)
-            YOLO(MOTO_MODEL_PATH)  # cache/download the weight once before workers load it
-            log.info("Each camera loads its own model + motorcycle model")
-        elif primary_has_moto:
-            log.info("Using the primary model's own motorcycle class for rider association")
-        else:
-            log.warning(
-                "REQUIRE_MOTORCYCLE is on but no motorcycle source is available "
-                "(primary model has no motorcycle class and MOTO_MODEL_PATH is unset) "
-                "— NO violations will be reported. Set MOTO_MODEL_PATH=yolov8n.pt or "
-                "REQUIRE_MOTORCYCLE=false."
-            )
-    else:
+    # The vehicle (COCO) model powers BOTH rider association and vehicle counting.
+    vehicle_path = MOTO_MODEL_PATH or None
+    if vehicle_path:
+        log.info("Pre-fetching vehicle model %s", vehicle_path)
+        YOLO(vehicle_path)  # cache/download once before per-camera workers load it
+    if REQUIRE_MOTORCYCLE and not vehicle_path and not primary_has_moto:
+        log.warning(
+            "REQUIRE_MOTORCYCLE is on but no motorcycle source is available "
+            "(primary model has no motorcycle class and MOTO_MODEL_PATH is unset) "
+            "— NO violations will be reported. Set MOTO_MODEL_PATH=yolov8n.pt or "
+            "REQUIRE_MOTORCYCLE=false."
+        )
+    if not REQUIRE_MOTORCYCLE:
         log.info("Rider association OFF — any bare head counts (pedestrians may be flagged)")
 
     if DEBUG_VIEW:
@@ -439,7 +501,7 @@ def main():
         # Start workers for newly-enabled cameras.
         for cam_id, cam in wanted.items():
             if cam_id not in workers or not workers[cam_id].is_alive():
-                w = CameraWorker(cam, MODEL_PATH, moto_path)
+                w = CameraWorker(cam, MODEL_PATH, vehicle_path)
                 w.start()
                 workers[cam_id] = w
 
