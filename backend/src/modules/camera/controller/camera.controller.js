@@ -16,10 +16,13 @@ export async function list(req, res, next) {
 
 export async function create(req, res, next) {
   try {
-    const { name, location, url, enabled, aiEnabled } = req.body ?? {};
+    const { name, location, url, enabled, aiEnabled, gate, countVehicles } = req.body ?? {};
     if (!name || !name.trim()) return res.status(400).json({ error: 'name is required' });
     if (!service.parseRtsp(url).ok) {
       return res.status(400).json({ error: 'url must be a valid rtsp:// URL' });
+    }
+    if (gate !== undefined && !['none', 'entrance', 'exit'].includes(gate)) {
+      return res.status(400).json({ error: 'gate must be none, entrance, or exit' });
     }
     const cam = await service.createCamera({
       name: name.trim(),
@@ -27,6 +30,8 @@ export async function create(req, res, next) {
       url,
       enabled: enabled !== false,
       aiEnabled: aiEnabled === true,
+      gate: gate ?? 'none',
+      countVehicles: countVehicles === true,
       createdBy: req.user.id,
     });
     recordLog({ action: 'camera.create', message: `Added camera ${cam.name} (${cam.host})`, userId: req.user.id, meta: { cameraId: cam.id } });
@@ -38,12 +43,19 @@ export async function create(req, res, next) {
 
 export async function update(req, res, next) {
   try {
-    const { name, location, url, enabled, aiEnabled } = req.body ?? {};
+    const { name, location, url, enabled, aiEnabled, gate, countVehicles } = req.body ?? {};
     const patch = {};
     if (name !== undefined) patch.name = String(name).trim();
     if (location !== undefined) patch.location = String(location).trim();
     if (enabled !== undefined) patch.enabled = Boolean(enabled);
     if (aiEnabled !== undefined) patch.aiEnabled = Boolean(aiEnabled);
+    if (countVehicles !== undefined) patch.countVehicles = Boolean(countVehicles);
+    if (gate !== undefined) {
+      if (!['none', 'entrance', 'exit'].includes(gate)) {
+        return res.status(400).json({ error: 'gate must be none, entrance, or exit' });
+      }
+      patch.gate = gate;
+    }
     if (url !== undefined) {
       if (!service.parseRtsp(url).ok) return res.status(400).json({ error: 'url must be a valid rtsp:// URL' });
       patch.url = url;

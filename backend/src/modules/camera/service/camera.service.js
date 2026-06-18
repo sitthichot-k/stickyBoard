@@ -19,9 +19,9 @@ export const listCameras = () => Camera.find({ deletedAt: null }).sort({ name: 1
 export const getCamera = (id) => base.searchOne(id);
 export const deleteCamera = (id) => base.delete(id);
 
-export function createCamera({ name, location, url, enabled, aiEnabled, createdBy }) {
+export function createCamera({ name, location, url, enabled, aiEnabled, gate, countVehicles, createdBy }) {
   const { host } = parseRtsp(url);
-  return Camera.create({ name, location, host, urlEnc: encrypt(url), enabled, aiEnabled, createdBy });
+  return Camera.create({ name, location, host, urlEnc: encrypt(url), enabled, aiEnabled, gate, countVehicles, createdBy });
 }
 
 export function updateCamera(id, patch) {
@@ -41,14 +41,22 @@ export async function getStreamUrl(id) {
   return decrypt(cam.urlEnc);
 }
 
-// Internal only — cameras the AI service should process, with their decrypted
-// RTSP URL. Gated by a service token at the route; never exposed to browsers.
+// Internal only — cameras the AI service should process (helmet detection and/or
+// vehicle counting), with their decrypted RTSP URL + per-camera flags. Gated by a
+// service token at the route; never exposed to browsers.
 export async function getAiSources() {
-  const cams = await Camera.find({ deletedAt: null, enabled: true, aiEnabled: true });
+  const cams = await Camera.find({
+    deletedAt: null,
+    enabled: true,
+    $or: [{ aiEnabled: true }, { countVehicles: true }],
+  });
   return cams.map((c) => ({
     id: String(c._id),
     name: c.name,
     location: c.location,
     rtspUrl: decrypt(c.urlEnc),
+    aiEnabled: !!c.aiEnabled,
+    gate: c.gate,
+    countVehicles: !!c.countVehicles,
   }));
 }

@@ -11,6 +11,8 @@ const cameraSchema = new mongoose.Schema(
     urlEnc: { type: String, required: true }, // rtsp URL, encrypted at rest
     enabled: { type: Boolean, default: true },
     aiEnabled: { type: Boolean, default: false }, // run AI helmet detection on this camera
+    gate: { type: String, enum: ['none', 'entrance', 'exit'], default: 'none' }, // entry/exit role
+    countVehicles: { type: Boolean, default: false }, // this camera is its gate's vehicle counter
 
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     deletedAt: { type: Date, default: null },

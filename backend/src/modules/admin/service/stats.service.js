@@ -4,12 +4,13 @@ import { Note } from '../../note/models/note.model.js';
 import { Connection } from '../../connection/models/connection.model.js';
 import { Stroke } from '../../stroke/models/stroke.model.js';
 import { getViolationStats } from '../../violation/service/violation.service.js';
+import { getVehicleCountStats } from '../../vehiclecount/service/vehiclecount.service.js';
 
 const active = { deletedAt: null };
 const ACTIVITY_DAYS = 14;
 
 export async function getStats() {
-  const [users, admins, sheets, notes, connections, strokes, violations] = await Promise.all([
+  const [users, admins, sheets, notes, connections, strokes, violations, vehicleCounts] = await Promise.all([
     User.countDocuments(active),
     User.countDocuments({ ...active, role: 'admin' }),
     Sheet.countDocuments(active),
@@ -17,6 +18,7 @@ export async function getStats() {
     Connection.countDocuments(active),
     Stroke.countDocuments(active),
     getViolationStats(),
+    getVehicleCountStats(),
   ]);
 
   // Top sheets by note count.
@@ -52,5 +54,6 @@ export async function getStats() {
     notesPerSheet,
     activity,
     violations,
+    vehicleCounts,
   };
 }

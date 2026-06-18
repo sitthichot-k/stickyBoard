@@ -4,6 +4,7 @@ import { connectDatabase, disconnectDatabase } from '../config/db.js';
 import { startLogCleanup, ensureLogTtlIndex } from '../modules/log/service/log.service.js';
 import { ensureSnapshotDir } from '../modules/violation/service/storage.service.js';
 import { startViolationCleanup } from '../modules/violation/service/violation.service.js';
+import { startVehicleCountCleanup } from '../modules/vehiclecount/service/vehiclecount.service.js';
 import { ensureSystemRoles } from '../modules/security/service/role.service.js';
 import { ensureDefaultPermissions } from '../modules/security/service/permission.service.js';
 import { loadRuntime } from '../modules/setting/service/runtime.service.js';
@@ -24,6 +25,7 @@ async function start() {
   startLogCleanup(); // backup purge (now + daily)
   ensureSnapshotDir(); // durable dir for violation snapshots
   startViolationCleanup(); // purge old violation records + images (now + daily)
+  startVehicleCountCleanup(); // purge old vehicle-count rows (now + daily)
   await ensureSystemRoles(); // make sure the admin/user roles always exist
   await ensureDefaultPermissions(); // seed the default matrix if it's empty
   await loadRuntime(); // load runtime controls into the in-memory cache
