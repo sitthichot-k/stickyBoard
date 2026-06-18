@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import Hls from 'hls.js';
 import * as api from '@/modules/camera/api/camera.js';
 import BaseAlert from '@/components/BaseAlert.vue';
@@ -13,6 +13,20 @@ const selected = ref(null);
 const playError = ref('');
 const videoRef = ref(null);
 let hls = null;
+
+// AI overlay: swap the HLS player for the detector's annotated MJPEG (boxes).
+const aiOverlay = ref(false);
+const overlayError = ref('');
+const showOverlay = computed(() => aiOverlay.value && !!selected.value?.aiEnabled);
+const overlaySrc = computed(() => (selected.value ? api.overlayUrl(selected.value.id) : ''));
+
+// When showing the overlay, stop the HLS player (and vice-versa) so only one
+// stream runs at a time.
+watch(showOverlay, (on) => {
+  overlayError.value = '';
+  if (on) stopPlayer();
+  else if (selected.value) nextTick(startPlayer);
+});
 
 const showEditor = ref(false);
 const editing = ref(null);
@@ -44,7 +58,8 @@ function stopPlayer() {
 function view(cam) {
   selected.value = cam;
   playError.value = '';
-  nextTick(startPlayer);
+  overlayError.value = '';
+  if (!showOverlay.value) nextTick(startPlayer);
 }
 
 function startPlayer() {
@@ -137,12 +152,26 @@ async function remove(c) {
 
     <div class="grid">
       <section class="panel player-panel">
-        <h2 class="panel__title">{{ selected ? selected.name : 'Live view' }}</h2>
+        <h2 class="panel__title">
+          <span>{{ selected ? selected.name : 'Live view' }}</span>
+          <label v-if="selected?.aiEnabled" class="ai-toggle">
+            <input v-model="aiOverlay" type="checkbox" />
+            <span>🪖 AI overlay</span>
+          </label>
+        </h2>
         <div class="player">
-          <video ref="videoRef" controls autoplay muted playsinline />
+          <img
+            v-if="showOverlay"
+            class="player__overlay"
+            :src="overlaySrc"
+            alt="AI detection overlay"
+            @error="overlayError = 'AI overlay unavailable — is the ai-detector service running for this camera?'"
+          />
+          <video v-show="!showOverlay" ref="videoRef" controls autoplay muted playsinline />
           <p v-if="!selected" class="player__hint text-muted">Pick a camera to view its live stream.</p>
         </div>
-        <BaseAlert v-if="playError" variant="warning">{{ playError }}</BaseAlert>
+        <BaseAlert v-if="showOverlay && overlayError" variant="warning">{{ overlayError }}</BaseAlert>
+        <BaseAlert v-else-if="!showOverlay && playError" variant="warning">{{ playError }}</BaseAlert>
       </section>
 
       <section class="panel">
@@ -232,6 +261,18 @@ async function remove(c) {
 .panel__title {
   margin: 0 0 var(--space-3);
   font-size: var(--font-size-base);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.ai-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
 }
 .player {
   position: relative;
@@ -243,7 +284,8 @@ async function remove(c) {
   align-items: center;
   justify-content: center;
 }
-.player video {
+.player video,
+.player__overlay {
   width: 100%;
   height: 100%;
   object-fit: contain;

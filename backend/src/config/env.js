@@ -42,6 +42,9 @@ export const env = {
     serviceToken: process.env.AI_SERVICE_TOKEN ?? '',
     snapshotDir: process.env.SNAPSHOT_DIR ?? path.join(process.cwd(), 'data', 'snapshots'),
     retentionDays: Number(process.env.VIOLATION_RETENTION_DAYS ?? 30),
+    // Base URL of the Python detector's debug/overlay server. The backend proxies
+    // its annotated MJPEG so the SPA can show boxes on the live view (RBAC-gated).
+    detectorUrl: process.env.AI_DETECTOR_URL ?? 'http://ai-detector:8090',
   },
 };
 

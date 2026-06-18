@@ -50,6 +50,8 @@ services:
       AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:-}
       SNAPSHOT_DIR: /app/data/snapshots
       VIOLATION_RETENTION_DAYS: ${VIOLATION_RETENTION_DAYS:-30}
+      # Proxy target for the AI overlay (annotated MJPEG) shown in the camera view.
+      AI_DETECTOR_URL: ${AI_DETECTOR_URL:-http://ai-detector:8090}
     # nodemon with -L (legacy/polling watch) — required for Windows bind mounts.
     command: ["npx", "nodemon", "-L", "src/routes/server.js"]
     volumes:

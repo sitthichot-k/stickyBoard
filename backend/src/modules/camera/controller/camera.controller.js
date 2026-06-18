@@ -1,7 +1,10 @@
 import fs from 'fs';
+import http from 'http';
+import https from 'https';
 import * as service from '../service/camera.service.js';
 import * as stream from '../service/stream.service.js';
 import { recordLog } from '../../log/service/log.service.js';
+import { env } from '../../../config/env.js';
 
 export async function list(req, res, next) {
   try {
@@ -92,6 +95,34 @@ export async function hls(req, res, next) {
     res.setHeader('Content-Type', file.endsWith('.m3u8') ? 'application/vnd.apple.mpegurl' : 'video/mp2t');
     res.setHeader('Cache-Control', 'no-cache');
     fs.createReadStream(fp).pipe(res);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Proxy the AI detector's annotated MJPEG for this camera (boxes burned in), so
+// the SPA can show it same-origin + RBAC-gated. The detector only has a stream
+// for cameras it's actively processing (enabled + aiEnabled).
+export function overlay(req, res, next) {
+  try {
+    const base = env.ai.detectorUrl;
+    if (!base) return res.status(503).json({ error: 'AI detector not configured' });
+    const url = `${base.replace(/\/$/, '')}/${req.params.id}/stream`;
+    const client = url.startsWith('https:') ? https : http;
+
+    const upstream = client.get(url, (up) => {
+      if (up.statusCode !== 200) {
+        up.resume();
+        return res.status(502).json({ error: 'AI overlay unavailable for this camera' });
+      }
+      res.setHeader('Content-Type', up.headers['content-type'] || 'multipart/x-mixed-replace');
+      res.setHeader('Cache-Control', 'no-cache');
+      up.pipe(res);
+    });
+    upstream.on('error', () => {
+      if (!res.headersSent) res.status(502).json({ error: 'AI detector not reachable' });
+    });
+    req.on('close', () => upstream.destroy());
   } catch (err) {
     next(err);
   }
