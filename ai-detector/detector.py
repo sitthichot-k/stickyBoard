@@ -22,6 +22,7 @@ import sys
 import time
 import logging
 import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import cv2
 import requests
@@ -58,11 +59,25 @@ MOTO_CLASSES = [
 ASSOC_MARGIN_X = float(os.environ.get("ASSOC_MARGIN_X", "0.2"))  # horizontal slack as a fraction of moto width
 ASSOC_RISE = float(os.environ.get("ASSOC_RISE", "1.5"))          # how far above the moto (× its height) a rider head may sit
 
+# Debug viewer — serve a live MJPEG stream of annotated frames (all detections +
+# the violation decision) so you can SEE what the model detects and why a frame
+# did/didn't fire. Off by default; turn on while tuning, then turn off.
+DEBUG_VIEW = os.environ.get("DEBUG_VIEW", "false").lower() == "true"
+DEBUG_PORT = int(os.environ.get("DEBUG_PORT", "8090"))
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
 log = logging.getLogger("detector")
+
+# Active workers, keyed by camera id — shared with the debug viewer.
+WORKERS = {}
+
+# BGR colours for the debug overlay.
+C_HEAD = (0, 0, 255)    # no-helmet head — red
+C_MOTO = (255, 128, 0)  # motorcycle — blue
+C_OTHER = (0, 200, 0)   # anything else — green
 
 
 def is_no_helmet(name: str) -> bool:
@@ -102,6 +117,8 @@ class CameraWorker(threading.Thread):
         self.rtsp_url = cam["rtspUrl"]
         self.stop_event = threading.Event()
         self._last_report = {}  # trackId -> last report timestamp
+        self.latest_jpeg = None  # most recent annotated frame (debug viewer)
+        self._frame_lock = threading.Lock()
 
     def stop(self):
         self.stop_event.set()
@@ -201,11 +218,12 @@ class CameraWorker(threading.Thread):
             elif is_motorcycle(name):
                 motos.append(box.xyxy[0].tolist())
 
-        if not heads:
-            return
-        if REQUIRE_MOTORCYCLE and self.moto_model is not None:
+        # Pull in motorcycles from the secondary model (only when there's a head
+        # to associate — saves a second inference on empty frames).
+        if heads and REQUIRE_MOTORCYCLE and self.moto_model is not None:
             motos.extend(self._detect_motos(frame))
 
+        reported = 0
         for conf, track_id, xyxy in heads:
             # Skip bare heads that aren't on a motorcycle (e.g. pedestrians).
             if REQUIRE_MOTORCYCLE and not head_on_motorcycle(xyxy, motos):
@@ -214,6 +232,40 @@ class CameraWorker(threading.Thread):
                 continue
             x1, y1, x2, y2 = xyxy
             self._report(frame, conf, track_id, (x1, y1, x2 - x1, y2 - y1))
+            reported += 1
+
+        if DEBUG_VIEW:
+            self._annotate(frame, r, names, motos)
+            if heads or motos:
+                log.info("[%s] heads=%d motos=%d reported=%d", self.name, len(heads), len(motos), reported)
+
+    def _annotate(self, frame, r, names, motos):
+        """Draw every detection + the violation decision, stash it as a JPEG for
+        the debug viewer."""
+        img = frame.copy()
+        for box in r.boxes:
+            name = names[int(box.cls)]
+            conf = float(box.conf)
+            x1, y1, x2, y2 = (int(v) for v in box.xyxy[0].tolist())
+            if is_no_helmet(name):
+                on_moto = (not REQUIRE_MOTORCYCLE) or head_on_motorcycle(box.xyxy[0].tolist(), motos)
+                color = C_HEAD
+                label = f"{name} {conf:.2f} " + ("VIOLATION" if on_moto else "no-moto")
+            elif is_motorcycle(name):
+                color, label = C_MOTO, f"{name} {conf:.2f}"
+            else:
+                color, label = C_OTHER, f"{name} {conf:.2f}"
+            cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
+            cv2.putText(img, label, (x1, max(12, y1 - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv2.LINE_AA)
+        # Secondary-model motorcycles (not in r.boxes) — mark with a '*'.
+        primary_moto_count = sum(1 for b in r.boxes if is_motorcycle(names[int(b.cls)]))
+        for mx1, my1, mx2, my2 in motos[primary_moto_count:]:
+            cv2.rectangle(img, (int(mx1), int(my1)), (int(mx2), int(my2)), C_MOTO, 2)
+            cv2.putText(img, "moto*", (int(mx1), max(12, int(my1) - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, C_MOTO, 1, cv2.LINE_AA)
+        ok, buf = cv2.imencode(".jpg", img)
+        if ok:
+            with self._frame_lock:
+                self.latest_jpeg = buf.tobytes()
 
 
 def fetch_sources():
@@ -224,6 +276,57 @@ def fetch_sources():
     )
     res.raise_for_status()
     return res.json()
+
+
+class DebugHandler(BaseHTTPRequestHandler):
+    """Tiny MJPEG viewer: `/` lists cameras, `/<cam_id>` shows its live stream."""
+
+    def log_message(self, *args):  # silence per-request logging
+        pass
+
+    def do_GET(self):
+        path = self.path.split("?")[0].strip("/")
+        parts = path.split("/") if path else []
+        if not parts:
+            items = "".join(f'<li><a href="/{cid}">{w.name}</a></li>' for cid, w in WORKERS.items())
+            return self._html(f"<h1>AI detector — debug</h1><ul>{items or '<li>no active cameras</li>'}</ul>")
+        worker = WORKERS.get(parts[0])
+        if worker is None:
+            return self.send_error(404)
+        if len(parts) >= 2 and parts[1] == "stream":
+            return self._stream(worker)
+        self._html(f'<h1>{worker.name}</h1><img src="/{parts[0]}/stream" style="max-width:100%">')
+
+    def _html(self, body):
+        data = (
+            "<!doctype html><meta charset=utf-8>"
+            f"<body style='font-family:sans-serif;background:#111;color:#eee'>{body}</body>"
+        ).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _stream(self, worker):
+        self.send_response(200)
+        self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=frame")
+        self.end_headers()
+        try:
+            while True:
+                with worker._frame_lock:
+                    jpg = worker.latest_jpeg
+                if jpg:
+                    self.wfile.write(b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + jpg + b"\r\n")
+                time.sleep(0.2)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
+
+def start_debug_server():
+    srv = ThreadingHTTPServer(("0.0.0.0", DEBUG_PORT), DebugHandler)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    log.info("Debug viewer at http://localhost:%d  (set DEBUG_VIEW=false to disable)", DEBUG_PORT)
 
 
 def main():
@@ -257,7 +360,10 @@ def main():
     else:
         log.info("Rider association OFF — any bare head counts (pedestrians may be flagged)")
 
-    workers = {}  # cam_id -> CameraWorker
+    if DEBUG_VIEW:
+        start_debug_server()
+
+    workers = WORKERS  # shared with the debug viewer
     while True:
         try:
             sources = fetch_sources()

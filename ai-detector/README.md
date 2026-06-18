@@ -60,3 +60,34 @@ docker compose up --build ai-detector
 `AI_SERVICE_TOKEN` must match the backend's value. GPU is optional but strongly
 recommended — see the note at the top of the `Dockerfile` for switching to a
 CUDA base image.
+
+## Debug viewer (is it actually working?)
+
+Set `DEBUG_VIEW=true` and open **http://localhost:8090** — it lists the active
+cameras and streams each one's frames with **every detection drawn**:
+
+- **red** box = bare head (`no-helmet`); the label reads `VIOLATION` when it's on
+  a motorcycle, or `no-moto` when it was skipped as a non-rider;
+- **blue** box = motorcycle (`moto*` = from the secondary model);
+- **green** box = any other class the model emits.
+
+It also logs one line per frame that has detections:
+`[Cam] heads=2 motos=1 reported=1`. Use this to pinpoint why nothing fires.
+
+### Catching nothing — checklist
+
+1. **Class names** — the boxes show the model's real class names. If a bare head
+   is **green** (not red), its class isn't in `NOHELMET_CLASSES` → add it (e.g.
+   the model calls it `head` or `P_NoHelmet`). Startup also logs `Model classes:`.
+2. **No motorcycle source** — if heads are red but labelled `no-moto`, no
+   motorcycle was detected near them. Either the primary model has no motorcycle
+   class and `MOTO_MODEL_PATH` is unset (a startup **warning** says so → set
+   `MOTO_MODEL_PATH=yolov8n.pt`), or the bike box doesn't line up — loosen
+   `ASSOC_MARGIN_X` / `ASSOC_RISE`. To confirm the rest works, temporarily set
+   `REQUIRE_MOTORCYCLE=false`.
+3. **Confidence** — if expected boxes don't appear at all, lower `CONF_THRESHOLD`.
+4. **Stream** — the log should say `stream opened`; if it keeps retrying, the RTSP
+   URL/credentials or network is the problem (independent of detection).
+
+Both the driver and a passenger (ซ้อนท้าย) are flagged: each bare head whose
+centre sits above the same motorcycle box counts.
