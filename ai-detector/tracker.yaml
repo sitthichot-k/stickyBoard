@@ -1,0 +1,11 @@
+# ByteTrack tuned for traffic counting — more lenient than the ultralytics
+# default so small/faint motorcycles still form stable tracks, and tracks survive
+# brief misses (helps at lower sample rates). Used for both helmet + vehicle
+# tracking. Override with the TRACKER env var.
+tracker_type: bytetrack
+track_high_thresh: 0.25   # default 0.5 — accept lower-confidence detections
+track_low_thresh: 0.1
+new_track_thresh: 0.25    # default 0.6 — start a track at lower confidence
+track_buffer: 60          # default 30 — keep lost tracks longer (survive occlusion)
+match_thresh: 0.8
+fuse_score: true

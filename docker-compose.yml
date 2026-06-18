@@ -99,7 +99,9 @@ services:
       MODEL_PATH: ${MODEL_PATH:-/models/helmet.pt}
       NOHELMET_CLASSES: ${NOHELMET_CLASSES:-no-helmet,no_helmet,without helmet,nohelmet}
       CONF_THRESHOLD: ${CONF_THRESHOLD:-0.5}
-      SAMPLE_FPS: ${SAMPLE_FPS:-3}
+      VEHICLE_CONF: ${VEHICLE_CONF:-0.3}
+      INFER_IMGSZ: ${INFER_IMGSZ:-960}
+      SAMPLE_FPS: ${SAMPLE_FPS:-4}
       # Rider association — only flag bare heads on a motorcycle (skip pedestrians).
       REQUIRE_MOTORCYCLE: ${REQUIRE_MOTORCYCLE:-true}
       MOTO_MODEL_PATH: ${MOTO_MODEL_PATH:-}

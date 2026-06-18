@@ -50,8 +50,11 @@ os.environ.setdefault(
 API_URL = os.environ.get("API_URL", "http://backend:8081/api/v1").rstrip("/")
 SERVICE_TOKEN = os.environ.get("AI_SERVICE_TOKEN", "")
 MODEL_PATH = os.environ.get("MODEL_PATH", "/models/helmet.pt")
-CONF_THRESHOLD = float(os.environ.get("CONF_THRESHOLD", "0.5"))
-SAMPLE_FPS = float(os.environ.get("SAMPLE_FPS", "3"))            # frames/sec to run inference on
+CONF_THRESHOLD = float(os.environ.get("CONF_THRESHOLD", "0.5"))   # helmet model
+VEHICLE_CONF = float(os.environ.get("VEHICLE_CONF", "0.3"))       # lower — vehicles are small/distant
+INFER_IMGSZ = int(os.environ.get("INFER_IMGSZ", "960"))          # larger = better small-object (bike) detection
+TRACKER = os.environ.get("TRACKER", "tracker.yaml")              # tuned ByteTrack (lenient thresholds)
+SAMPLE_FPS = float(os.environ.get("SAMPLE_FPS", "4"))            # frames/sec — higher = better tracking of fast bikes
 SOURCES_REFRESH_SEC = float(os.environ.get("SOURCES_REFRESH_SEC", "30"))
 LOCAL_DEDUP_SEC = float(os.environ.get("LOCAL_DEDUP_SEC", "30"))  # don't re-post the same track within this window
 # Substrings (case-insensitive) of class names that mean "no helmet" — datasets
@@ -260,7 +263,7 @@ class CameraWorker(threading.Thread):
     def _detect_vehicles(self, frame):
         """[(name, xyxy)] of vehicles via predict (rider association / overlay)."""
         try:
-            res = self.vehicle_model.predict(frame, conf=CONF_THRESHOLD, verbose=False)
+            res = self.vehicle_model.predict(frame, conf=VEHICLE_CONF, imgsz=INFER_IMGSZ, verbose=False)
         except Exception as e:
             log.warning("[%s] vehicle inference error: %s", self.name, e)
             return []
@@ -273,7 +276,7 @@ class CameraWorker(threading.Thread):
         """[(count_type, track_id, xyxy)] of vehicles via track (counting)."""
         try:
             res = self.vehicle_model.track(
-                frame, persist=True, conf=CONF_THRESHOLD, tracker="bytetrack.yaml", verbose=False
+                frame, persist=True, conf=VEHICLE_CONF, imgsz=INFER_IMGSZ, tracker=TRACKER, verbose=False
             )
         except Exception as e:
             log.warning("[%s] vehicle track error: %s", self.name, e)
@@ -314,7 +317,7 @@ class CameraWorker(threading.Thread):
         if self.ai_enabled and self.model is not None:
             try:
                 r = self.model.track(
-                    frame, persist=True, conf=CONF_THRESHOLD, tracker="bytetrack.yaml", verbose=False
+                    frame, persist=True, conf=CONF_THRESHOLD, imgsz=INFER_IMGSZ, tracker=TRACKER, verbose=False
                 )[0]
             except Exception as e:  # inference must never kill the worker
                 log.warning("[%s] inference error: %s", self.name, e)
