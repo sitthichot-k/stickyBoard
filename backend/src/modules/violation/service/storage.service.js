@@ -4,23 +4,23 @@ import { env } from '../../../config/env.js';
 
 // Violation snapshots are written to a durable directory (unlike the reaped HLS
 // temp dir). Mount a volume at SNAPSHOT_DIR in production so images survive a
-// container restart.
-const DIR = env.ai.snapshotDir;
+// container restart. Read lazily so a runtime/test override of the dir applies.
+const dir = () => env.ai.snapshotDir;
 
 export function ensureSnapshotDir() {
-  fs.mkdirSync(DIR, { recursive: true });
+  fs.mkdirSync(dir(), { recursive: true });
 }
 
 // Resolve a stored filename to an absolute path, guarding against traversal.
 // Returns null for anything that isn't a plain filename.
 export function snapshotFile(name) {
   if (!name || !/^[\w.-]+$/.test(name)) return null;
-  return path.join(DIR, name);
+  return path.join(dir(), name);
 }
 
 export function saveSnapshot(name, buffer) {
   ensureSnapshotDir();
-  fs.writeFileSync(path.join(DIR, name), buffer);
+  fs.writeFileSync(path.join(dir(), name), buffer);
   return name;
 }
 

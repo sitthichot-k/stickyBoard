@@ -17,6 +17,11 @@ npm-debug.log*
 # Local tooling / agent config
 .claude/
 
+# AI detector — model weights (large, mounted at runtime) + python caches
+ai-detector/models/
+__pycache__/
+*.pyc
+
 # OS / editor
 .DS_Store
 Thumbs.db

@@ -46,10 +46,15 @@ services:
       LOG_API_TRAFFIC: ${LOG_API_TRAFFIC:-true}
       LOG_RETENTION_DAYS: ${LOG_RETENTION_DAYS:-30}
       RATE_LIMIT: ${RATE_LIMIT:-true}
+      # AI helmet-detection — shared secret + durable snapshot dir (named volume).
+      AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:-}
+      SNAPSHOT_DIR: /app/data/snapshots
+      VIOLATION_RETENTION_DAYS: ${VIOLATION_RETENTION_DAYS:-30}
     # nodemon with -L (legacy/polling watch) — required for Windows bind mounts.
     command: ["npx", "nodemon", "-L", "src/routes/server.js"]
     volumes:
       - ./backend/src:/app/src
+      - snapshots:/app/data/snapshots
     depends_on:
       mongo:
         condition: service_healthy
@@ -78,5 +83,26 @@ services:
     ports:
       - "${FRONTEND_PORT:-8080}:80"
 
+  # Helmet-violation detector (phase 1). Pulls RTSP frames from aiEnabled cameras,
+  # runs YOLO, and POSTs violations back to the backend. Disabled until you add a
+  # model + token: `docker compose up ai-detector`. Mount weights at ./ai-detector/models.
+  ai-detector:
+    build:
+      context: ./ai-detector
+    restart: unless-stopped
+    environment:
+      API_URL: http://backend:8081/api/v1
+      AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:-}
+      MODEL_PATH: ${MODEL_PATH:-/models/helmet.pt}
+      NOHELMET_CLASSES: ${NOHELMET_CLASSES:-no-helmet,no_helmet,without helmet,nohelmet}
+      CONF_THRESHOLD: ${CONF_THRESHOLD:-0.5}
+      SAMPLE_FPS: ${SAMPLE_FPS:-3}
+    volumes:
+      - ./ai-detector/models:/models:ro
+    depends_on:
+      - backend
+    profiles: ["ai"]
+
 volumes:
   mongo-data:
+  snapshots:
