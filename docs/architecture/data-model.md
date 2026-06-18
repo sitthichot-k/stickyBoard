@@ -103,6 +103,8 @@ the browser as HLS.
 | `urlEnc` | String | full RTSP URL, **encrypted at rest**; never returned |
 | `enabled` | Boolean | disabled cameras don't stream |
 | `aiEnabled` | Boolean | run AI helmet detection on this camera (default false) |
+| `gate` | enum none/entrance/exit | entry/exit role for vehicle counting (default none) |
+| `countVehicles` | Boolean | this camera is its gate's vehicle counter (default false) |
 | `createdBy` | ObjectId (ref User) | who added it |
 | `deletedAt` | Date | soft-delete marker |
 
@@ -131,6 +133,23 @@ disk volume; only its filename is stored here and it's served via
 
 Retention: records older than `VIOLATION_RETENTION_DAYS` are hard-deleted (with
 their image files) by a daily interval job, mirroring log retention.
+
+## VehicleCount
+
+`backend/src/modules/vehiclecount/models/vehiclecount.model.js` — one counted
+vehicle at a gate (append-only analytics; no soft delete). Posted by the AI
+detector when a new vehicle track is confirmed on a counter camera.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `cameraId` | ObjectId (ref Camera) | the counter camera |
+| `gate` | enum entrance/exit | direction (in/out) |
+| `type` | enum motorcycle/car/truck/bus | vehicle class |
+| `trackId` | String | tracker id (de-dup key: camera+track within 5 min) |
+| `detectedAt` | Date | when counted |
+
+Surfaced read-only via `/admin/stats` (in/out totals, today, by type, 14-day
+trend); rows past the retention window are purged daily.
 
 ## Setting
 

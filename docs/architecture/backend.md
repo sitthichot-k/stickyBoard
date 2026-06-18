@@ -24,7 +24,7 @@ Controllers never touch Mongoose directly; they call services. Cross-module
 imports are allowed (e.g. `auth` uses the `user` service).
 
 Modules: `health · auth · user · admin · sheet · note · connection · stroke ·
-setting · log · security · notification · camera · violation`.
+setting · log · security · notification · camera · violation · vehiclecount`.
 
 **Cameras** stream RTSP to the browser: `camera/service/stream.service.js` spawns
 **ffmpeg** (in the image) per camera to repackage RTSP → HLS on demand, reaping
@@ -41,6 +41,13 @@ a snapshot written to a durable volume, with a 60s per-track de-dup). The
 human-facing list / review / snapshot / delete routes are RBAC-gated
 (`admin-violations`) and audited; old records + images are purged on a retention
 interval (`VIOLATION_RETENTION_DAYS`).
+
+**Vehicle counting** (`vehiclecount`) reuses the detector to count vehicles in/out.
+A camera carries a `gate` (`entrance`/`exit`) and a `countVehicles` flag (one
+counter per gate — others at the gate are view-only, avoiding double counts). The
+detector tracks vehicles on a counter camera and posts one count per new track to
+`POST /vehicle-counts/ingest` (service-token); rows are deduped per camera+track,
+purged on retention, and summarised (in/out by type) on the admin dashboard.
 
 ## Bootstrapping (`routes/`)
 

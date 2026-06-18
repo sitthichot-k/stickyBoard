@@ -297,10 +297,10 @@ track once.
 
 | FR | Requirement | Status |
 | --- | --- | --- |
-| FR-VC-001 | Camera gains `gate` (`none`/`entrance`/`exit`) and `countVehicles` (is this gate's counter); set from the Cameras page. | ⬜ |
-| FR-VC-002 | On a counter camera the detector tracks vehicles (ByteTrack) and posts one count per new track to `POST /vehicle-counts/ingest` (service-token), with `{ gate, type, trackId }`; type ∈ motorcycle/car/truck/bus. | ⬜ |
-| FR-VC-003 | `VehicleCount` events are stored (deduped per camera+track) and purged past the retention window. | ⬜ |
-| FR-VC-004 | `/admin/stats` returns an in/out summary by type (today + total + 14-day trend); the Dashboard renders matching cards + charts. | ⬜ |
+| FR-VC-001 | Camera gains `gate` (`none`/`entrance`/`exit`) and `countVehicles` (is this gate's counter); set from the Cameras page. | ✅ |
+| FR-VC-002 | On a counter camera the detector tracks vehicles (ByteTrack) and posts one count per new track to `POST /vehicle-counts/ingest` (service-token), with `{ gate, type, trackId }`; type ∈ motorcycle/car/truck/bus. | ✅ |
+| FR-VC-003 | `VehicleCount` events are stored (deduped per camera+track) and purged past the retention window. | ✅ |
+| FR-VC-004 | `/admin/stats` returns an in/out summary by type (today + total + 14-day trend); the Dashboard renders matching cards + charts. | ✅ |
 
 ## 4. Non-functional requirements
 
