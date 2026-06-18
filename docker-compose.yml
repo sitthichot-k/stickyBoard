@@ -86,8 +86,9 @@ services:
       - "${FRONTEND_PORT:-8080}:80"
 
   # Helmet-violation detector (phase 1). Pulls RTSP frames from aiEnabled cameras,
-  # runs YOLO, and POSTs violations back to the backend. Disabled until you add a
-  # model + token: `docker compose up ai-detector`. Mount weights at ./ai-detector/models.
+  # runs YOLO, and POSTs violations back to the backend. Starts with the rest of
+  # the stack (docker compose up -d). Needs AI_SERVICE_TOKEN set and a model at
+  # ./ai-detector/models/helmet.pt (or MODEL_PATH=yolov8n.pt for the smoke test).
   ai-detector:
     build:
       context: ./ai-detector
@@ -110,7 +111,6 @@ services:
       - "${DEBUG_PORT:-8090}:8090"
     depends_on:
       - backend
-    profiles: ["ai"]
 
 volumes:
   mongo-data:
