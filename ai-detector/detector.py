@@ -37,6 +37,15 @@ try:
 except ImportError:
     pass
 
+# Force RTSP over TCP. OpenCV/FFmpeg default to UDP, which often delivers NO
+# frames across Docker/NAT and then times out after ~30s ("Stream timeout
+# triggered"). The backend's ffmpeg uses TCP too. Must be set before any
+# cv2.VideoCapture is created. `stimeout` (µs) caps the open/read wait.
+os.environ.setdefault(
+    "OPENCV_FFMPEG_CAPTURE_OPTIONS",
+    f"rtsp_transport;{os.environ.get('RTSP_TRANSPORT', 'tcp')}|stimeout;5000000",
+)
+
 # ---- Config (env) ----
 API_URL = os.environ.get("API_URL", "http://backend:8081/api/v1").rstrip("/")
 SERVICE_TOKEN = os.environ.get("AI_SERVICE_TOKEN", "")
