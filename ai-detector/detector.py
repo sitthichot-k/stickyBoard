@@ -28,6 +28,15 @@ import cv2
 import requests
 from ultralytics import YOLO
 
+# Load ai-detector/.env when running standalone (`python detector.py`). In Docker
+# the env comes from compose (root .env); load_dotenv doesn't override that.
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
+
 # ---- Config (env) ----
 API_URL = os.environ.get("API_URL", "http://backend:8081/api/v1").rstrip("/")
 SERVICE_TOKEN = os.environ.get("AI_SERVICE_TOKEN", "")
@@ -56,6 +65,20 @@ MOTO_CLASSES = [
     for s in os.environ.get("MOTO_CLASSES", "motorcycle,motorbike").split(",")
     if s.strip()
 ]
+# Drawn green in the overlay (all vehicles, not just motorcycles). Association
+# still uses MOTO_CLASSES (a subset).
+VEHICLE_CLASSES = [
+    s.strip().lower()
+    for s in os.environ.get("VEHICLE_CLASSES", "motorcycle,motorbike,car,truck,bus,bicycle").split(",")
+    if s.strip()
+]
+# Drawn yellow — a helmet that IS being worn. Checked after no-helmet so
+# "no-helmet" never falls through to here.
+HELMET_CLASSES = [
+    s.strip().lower()
+    for s in os.environ.get("HELMET_CLASSES", "with helmet,wearing helmet,helmet").split(",")
+    if s.strip()
+]
 ASSOC_MARGIN_X = float(os.environ.get("ASSOC_MARGIN_X", "0.2"))  # horizontal slack as a fraction of moto width
 ASSOC_RISE = float(os.environ.get("ASSOC_RISE", "1.5"))          # how far above the moto (× its height) a rider head may sit
 
@@ -74,10 +97,10 @@ log = logging.getLogger("detector")
 # Active workers, keyed by camera id — shared with the debug viewer.
 WORKERS = {}
 
-# BGR colours for the debug overlay.
-C_HEAD = (0, 0, 255)    # no-helmet head — red
-C_MOTO = (255, 128, 0)  # motorcycle — blue
-C_OTHER = (0, 200, 0)   # anything else — green
+# BGR colours for the overlay.
+C_VIOLATION = (0, 0, 255)    # no-helmet (violation) — red
+C_HELMET = (0, 215, 255)     # helmet worn — yellow
+C_VEHICLE = (0, 200, 0)      # any vehicle — green
 
 
 def is_no_helmet(name: str) -> bool:
@@ -88,6 +111,16 @@ def is_no_helmet(name: str) -> bool:
 def is_motorcycle(name: str) -> bool:
     n = name.lower()
     return any(key in n for key in MOTO_CLASSES)
+
+
+def is_vehicle(name: str) -> bool:
+    n = name.lower()
+    return any(key in n for key in VEHICLE_CLASSES)
+
+
+def is_helmet(name: str) -> bool:
+    n = name.lower()
+    return any(key in n for key in HELMET_CLASSES)
 
 
 def head_on_motorcycle(head_xyxy, motos) -> bool:
@@ -182,17 +215,17 @@ class CameraWorker(threading.Thread):
             cap.release()
         log.info("[%s] worker stopped", self.name)
 
-    def _detect_motos(self, frame):
-        """Motorcycle boxes from the optional secondary model (xyxy list)."""
+    def _detect_vehicles(self, frame):
+        """[(name, xyxy)] of vehicles from the optional secondary model."""
         try:
             res = self.moto_model.predict(frame, conf=CONF_THRESHOLD, verbose=False)
         except Exception as e:
-            log.warning("[%s] moto inference error: %s", self.name, e)
+            log.warning("[%s] vehicle inference error: %s", self.name, e)
             return []
         r = res[0]
         if r.boxes is None:
             return []
-        return [box.xyxy[0].tolist() for box in r.boxes if is_motorcycle(r.names[int(box.cls)])]
+        return [(r.names[int(b.cls)], b.xyxy[0].tolist()) for b in r.boxes if is_vehicle(r.names[int(b.cls)])]
 
     def _process(self, frame):
         try:
@@ -207,21 +240,27 @@ class CameraWorker(threading.Thread):
         if r.boxes is None:
             return
 
-        # Collect bare heads + any motorcycles the primary model itself emits.
-        heads = []  # (conf, track_id, xyxy)
-        motos = []  # xyxy
+        # Split the primary model's detections into the three overlay groups.
+        heads = []     # (conf, track_id, xyxy)  — no-helmet
+        helmets = []   # (conf, xyxy)            — helmet worn
+        vehicles = []  # (name, xyxy)            — any vehicle (green)
         for box in r.boxes:
             name = names[int(box.cls)]
+            xyxy = box.xyxy[0].tolist()
             if is_no_helmet(name):
                 track_id = int(box.id) if box.id is not None else None
-                heads.append((float(box.conf), track_id, box.xyxy[0].tolist()))
-            elif is_motorcycle(name):
-                motos.append(box.xyxy[0].tolist())
+                heads.append((float(box.conf), track_id, xyxy))
+            elif is_helmet(name):
+                helmets.append((float(box.conf), xyxy))
+            elif is_vehicle(name):
+                vehicles.append((name, xyxy))
 
-        # Pull in motorcycles from the secondary model (only when there's a head
-        # to associate — saves a second inference on empty frames).
-        if heads and REQUIRE_MOTORCYCLE and self.moto_model is not None:
-            motos.extend(self._detect_motos(frame))
+        # Secondary vehicle model: run it when we need to associate a head, or
+        # whenever the live overlay is on (so every vehicle is drawn each frame).
+        if self.moto_model is not None and (DEBUG_VIEW or (REQUIRE_MOTORCYCLE and heads)):
+            vehicles += self._detect_vehicles(frame)
+
+        motos = [xyxy for (name, xyxy) in vehicles if is_motorcycle(name)]
 
         reported = 0
         for conf, track_id, xyxy in heads:
@@ -235,33 +274,27 @@ class CameraWorker(threading.Thread):
             reported += 1
 
         if DEBUG_VIEW:
-            self._annotate(frame, r, names, motos)
-            if heads or motos:
-                log.info("[%s] heads=%d motos=%d reported=%d", self.name, len(heads), len(motos), reported)
+            self._annotate(frame, heads, helmets, vehicles, motos)
+            if heads or vehicles:
+                log.info("[%s] heads=%d helmets=%d vehicles=%d reported=%d",
+                         self.name, len(heads), len(helmets), len(vehicles), reported)
 
-    def _annotate(self, frame, r, names, motos):
-        """Draw every detection + the violation decision, stash it as a JPEG for
-        the debug viewer."""
+    @staticmethod
+    def _box(img, xyxy, color, label):
+        x1, y1, x2, y2 = (int(v) for v in xyxy)
+        cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
+        cv2.putText(img, label, (x1, max(12, y1 - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv2.LINE_AA)
+
+    def _annotate(self, frame, heads, helmets, vehicles, motos):
+        """Draw vehicles (green), helmets (yellow), violations (red); stash JPEG."""
         img = frame.copy()
-        for box in r.boxes:
-            name = names[int(box.cls)]
-            conf = float(box.conf)
-            x1, y1, x2, y2 = (int(v) for v in box.xyxy[0].tolist())
-            if is_no_helmet(name):
-                on_moto = (not REQUIRE_MOTORCYCLE) or head_on_motorcycle(box.xyxy[0].tolist(), motos)
-                color = C_HEAD
-                label = f"{name} {conf:.2f} " + ("VIOLATION" if on_moto else "no-moto")
-            elif is_motorcycle(name):
-                color, label = C_MOTO, f"{name} {conf:.2f}"
-            else:
-                color, label = C_OTHER, f"{name} {conf:.2f}"
-            cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
-            cv2.putText(img, label, (x1, max(12, y1 - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv2.LINE_AA)
-        # Secondary-model motorcycles (not in r.boxes) — mark with a '*'.
-        primary_moto_count = sum(1 for b in r.boxes if is_motorcycle(names[int(b.cls)]))
-        for mx1, my1, mx2, my2 in motos[primary_moto_count:]:
-            cv2.rectangle(img, (int(mx1), int(my1)), (int(mx2), int(my2)), C_MOTO, 2)
-            cv2.putText(img, "moto*", (int(mx1), max(12, int(my1) - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, C_MOTO, 1, cv2.LINE_AA)
+        for name, xyxy in vehicles:
+            self._box(img, xyxy, C_VEHICLE, name)
+        for conf, xyxy in helmets:
+            self._box(img, xyxy, C_HELMET, f"helmet {conf:.2f}")
+        for conf, _track_id, xyxy in heads:
+            on_moto = (not REQUIRE_MOTORCYCLE) or head_on_motorcycle(xyxy, motos)
+            self._box(img, xyxy, C_VIOLATION, f"no-helmet {conf:.2f} " + ("VIOLATION" if on_moto else "no-moto"))
         ok, buf = cv2.imencode(".jpg", img)
         if ok:
             with self._frame_lock:

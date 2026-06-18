@@ -66,10 +66,14 @@ CUDA base image.
 Set `DEBUG_VIEW=true` and open **http://localhost:8090** — it lists the active
 cameras and streams each one's frames with **every detection drawn**:
 
-- **red** box = bare head (`no-helmet`); the label reads `VIOLATION` when it's on
-  a motorcycle, or `no-moto` when it was skipped as a non-rider;
-- **blue** box = motorcycle (`moto*` = from the secondary model);
-- **green** box = any other class the model emits.
+- **green** box = any vehicle (`VEHICLE_CLASSES` — motorcycles, cars, …), drawn
+  every frame so you can see the model is tracking traffic;
+- **yellow** box = a helmet being worn (`HELMET_CLASSES`);
+- **red** box = a bare head (`no-helmet`); the label reads `VIOLATION` when it's
+  on a motorcycle, or `no-moto` when it was skipped as a non-rider.
+
+Snapshots are still saved **only** for red violations — the overlay is just the
+live view.
 
 It also logs one line per frame that has detections:
 `[Cam] heads=2 motos=1 reported=1`. Use this to pinpoint why nothing fires.
