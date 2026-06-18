@@ -283,7 +283,11 @@ class CameraWorker(threading.Thread):
         reported = 0
         for conf, track_id, xyxy in heads:
             # Skip bare heads that aren't on a motorcycle (e.g. pedestrians).
+            # Logged (not gated by DEBUG_VIEW) so it's clear WHY a no-helmet
+            # detection didn't fire a violation.
             if REQUIRE_MOTORCYCLE and not head_on_motorcycle(xyxy, motos):
+                log.info("[%s] no_helmet conf=%.2f — skipped: not on a motorcycle (motos=%d)",
+                         self.name, conf, len(motos))
                 continue
             if track_id is not None and not self._should_report(track_id):
                 continue
