@@ -16,7 +16,7 @@ let hls = null;
 
 const showEditor = ref(false);
 const editing = ref(null);
-const form = ref({ name: '', location: '', url: '', enabled: true });
+const form = ref({ name: '', location: '', url: '', enabled: true, aiEnabled: false });
 const saving = ref(false);
 
 async function load() {
@@ -78,12 +78,12 @@ function startPlayer() {
 
 function openNew() {
   editing.value = null;
-  form.value = { name: '', location: '', url: '', enabled: true };
+  form.value = { name: '', location: '', url: '', enabled: true, aiEnabled: false };
   showEditor.value = true;
 }
 function openEdit(c) {
   editing.value = c.id;
-  form.value = { name: c.name, location: c.location || '', url: '', enabled: c.enabled };
+  form.value = { name: c.name, location: c.location || '', url: '', enabled: c.enabled, aiEnabled: !!c.aiEnabled };
   showEditor.value = true;
 }
 async function save() {
@@ -91,7 +91,12 @@ async function save() {
   saving.value = true;
   error.value = '';
   try {
-    const body = { name: form.value.name, location: form.value.location, enabled: form.value.enabled };
+    const body = {
+      name: form.value.name,
+      location: form.value.location,
+      enabled: form.value.enabled,
+      aiEnabled: form.value.aiEnabled,
+    };
     if (form.value.url.trim()) body.url = form.value.url.trim();
     if (editing.value) await api.updateCamera(editing.value, body);
     else await api.createCamera(body);
@@ -150,6 +155,7 @@ async function remove(c) {
               <strong>{{ c.name }}</strong>
               <span class="text-muted">{{ c.host }}<template v-if="c.location"> · {{ c.location }}</template></span>
               <span v-if="!c.enabled" class="badge badge--off">disabled</span>
+              <span v-if="c.aiEnabled" class="badge badge--ai">🪖 AI</span>
             </div>
             <div class="cam__actions">
               <BaseButton size="sm" :disabled="!c.enabled" @click="view(c)">View</BaseButton>
@@ -174,6 +180,10 @@ async function remove(c) {
         <label class="field field--row">
           <input v-model="form.enabled" type="checkbox" />
           <span>Enabled</span>
+        </label>
+        <label class="field field--row">
+          <input v-model="form.aiEnabled" type="checkbox" />
+          <span>AI helmet detection</span>
         </label>
         <div class="modal__actions">
           <BaseButton variant="ghost" @click="showEditor = false">Cancel</BaseButton>
@@ -284,6 +294,16 @@ async function remove(c) {
   border-radius: 999px;
   background: var(--color-warning-soft);
   color: var(--color-warning);
+  width: fit-content;
+}
+.badge--ai {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
   width: fit-content;
 }
 .link {

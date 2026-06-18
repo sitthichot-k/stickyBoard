@@ -60,6 +60,23 @@ const linePath = computed(() => {
 const areaPath = computed(() => (linePath.value ? `${linePath.value} L ${CW},${CH} L 0,${CH} Z` : ''));
 const dayLabel = (d) => d.slice(5); // MM-DD
 
+/* ---- Helmet violations ---- */
+const vio = computed(() => stats.value?.violations ?? null);
+const vioCards = computed(() => {
+  const v = vio.value;
+  if (!v) return [];
+  return [
+    { label: 'Today', value: v.today },
+    { label: 'Last 7 days', value: v.last7 },
+    { label: 'Unreviewed', value: v.unreviewed, danger: v.unreviewed > 0 },
+    { label: 'Total', value: v.total },
+  ];
+});
+const vioTrend = computed(() => vio.value?.trend ?? []);
+const maxVio = computed(() => Math.max(1, ...vioTrend.value.map((t) => t.count)));
+const topCameras = computed(() => vio.value?.topCameras ?? []);
+const maxVioCam = computed(() => Math.max(1, ...topCameras.value.map((c) => c.count)));
+
 /* ---- Performance (from api.request logs) ---- */
 const perfCards = computed(() => {
   const p = perf.value;
@@ -142,6 +159,49 @@ function fmtUptime(sec) {
           </div>
         </section>
       </div>
+
+      <!-- Helmet violations -->
+      <template v-if="vio">
+        <h2 class="section-title">🪖 Helmet violations</h2>
+        <div class="kpis">
+          <div v-for="k in vioCards" :key="k.label" class="kpi">
+            <span class="kpi__value" :class="{ 'kpi__value--danger': k.danger }">{{ k.value }}</span>
+            <span class="kpi__label">{{ k.label }}</span>
+          </div>
+        </div>
+
+        <div class="grid">
+          <!-- Trend -->
+          <section class="panel">
+            <h2 class="panel__title">Violations · last 14 days</h2>
+            <div class="tp">
+              <span
+                v-for="(t, i) in vioTrend"
+                :key="i"
+                class="tp__bar"
+                :style="{ height: `${(t.count / maxVio) * 100}%` }"
+                :title="`${t.date} · ${t.count}`"
+              />
+            </div>
+            <div class="chart__axis text-muted">
+              <span>{{ vioTrend.length ? dayLabel(vioTrend[0].date) : '' }}</span>
+              <span>peak {{ maxVio }}</span>
+              <span>{{ vioTrend.length ? dayLabel(vioTrend[vioTrend.length - 1].date) : '' }}</span>
+            </div>
+          </section>
+
+          <!-- Top cameras -->
+          <section class="panel">
+            <h2 class="panel__title">Top cameras by violations</h2>
+            <p v-if="!topCameras.length" class="text-muted">No violations yet.</p>
+            <div v-for="c in topCameras" :key="c.name" class="bar">
+              <span class="bar__name">{{ c.name }}</span>
+              <span class="bar__track"><span class="bar__fill" :style="{ width: `${(c.count / maxVioCam) * 100}%` }" /></span>
+              <span class="bar__count">{{ c.count }}</span>
+            </div>
+          </section>
+        </div>
+      </template>
 
       <!-- Performance (derived from api.request logs) -->
       <template v-if="perf">
