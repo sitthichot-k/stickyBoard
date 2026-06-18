@@ -12,7 +12,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY detector.py .
+COPY detector.py inspect_model.py ./
 
 # Model weights are mounted at runtime (see MODEL_PATH / the compose volume).
+# Inspect a mounted model:  docker compose run --rm ai-detector python inspect_model.py /models/helmet.pt
 CMD ["python", "-u", "detector.py"]

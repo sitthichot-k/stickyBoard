@@ -366,7 +366,10 @@ def main():
     if not SERVICE_TOKEN:
         log.error("AI_SERVICE_TOKEN is not set — refusing to start.")
         sys.exit(1)
-    if not os.path.exists(MODEL_PATH):
+    # A path (e.g. /models/helmet.pt) must exist; a bare name (e.g. yolov8n.pt) is
+    # left for ultralytics to resolve/auto-download.
+    is_path = "/" in MODEL_PATH or "\\" in MODEL_PATH
+    if is_path and not os.path.exists(MODEL_PATH):
         log.error("Model not found at %s — set MODEL_PATH to a helmet YOLO weight.", MODEL_PATH)
         sys.exit(1)
 

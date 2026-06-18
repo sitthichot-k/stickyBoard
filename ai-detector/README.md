@@ -47,6 +47,39 @@ Phase 1 uses a **pre-trained** helmet YOLO weight — mount it at `MODEL_PATH`
 differently, so set `NOHELMET_CLASSES` to the substring(s) used by your model
 (check the `Model classes:` line logged at startup).
 
+### Getting a model
+
+There is **no official** ultralytics helmet model — you must supply one. Reliable
+sources (check the licence before use):
+
+- **Roboflow Universe** — search "helmet detection" / "motorcycle helmet"; many
+  projects export a YOLOv8 `.pt`. (Export format: YOLOv8.)
+- **Train your own** with a helmet dataset:
+  `yolo detect train data=helmet.yaml model=yolov8n.pt epochs=100` → `best.pt`.
+- The classes you want are typically `helmet` + `no-helmet` (some use `head` for a
+  bare head). A motorcycle class is a bonus (lets you skip `MOTO_MODEL_PATH`).
+
+Once you have a weight, drop it at `ai-detector/models/helmet.pt` (or use the
+helper below), then point `NOHELMET_CLASSES` at the right class name.
+
+```bash
+# download + auto-inspect (prints the exact env to use):
+./fetch_model.sh "https://…/best.pt"
+# or inspect a model you already have:
+python inspect_model.py models/helmet.pt
+```
+
+`inspect_model.py` lists the model's classes and prints the `NOHELMET_CLASSES` /
+`HELMET_CLASSES` / `VEHICLE_CLASSES` lines that match it, and warns if it has no
+helmet or motorcycle class.
+
+### Smoke test without a helmet model
+
+To confirm the whole pipeline (detector → ingest → Violations page) works before
+you have a real model, temporarily set `MODEL_PATH=yolov8n.pt`,
+`NOHELMET_CLASSES=person`, `REQUIRE_MOTORCYCLE=false` — every person then "fires"
+a violation. `yolov8n.pt` auto-downloads. Revert once verified.
+
 ## Run
 
 Configured via env (see `.env.example`). In the project it runs as the
