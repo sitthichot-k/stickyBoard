@@ -37,6 +37,11 @@ services:
       NODE_ENV: production
       PORT: ${BACKEND_PORT:-8081}
       MONGODB_URI: mongodb://mongo:27017/${MONGO_DB:-stickyBoard}
+      # The backend creates this dir on boot. The prod image runs as the non-root
+      # `node` user, which can't write to /app — point it at a writable path.
+      # (AI/violation snapshots are off here; if you enable them later, mount a
+      # persistent volume owned by `node` instead.)
+      SNAPSHOT_DIR: ${SNAPSHOT_DIR:-/tmp/snapshots}
       # Public origin of the site — used for CORS + email links.
       CORS_ORIGIN: ${FRONTEND_ORIGIN}
       APP_URL: ${FRONTEND_ORIGIN}
