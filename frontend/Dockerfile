@@ -15,8 +15,10 @@ CMD ["npm", "run", "dev"]
 # ---- build: produce static assets ----
 FROM base AS build
 COPY . .
-# In Docker (prod) the app calls the API via nginx at the relative path "/api".
-ENV VITE_API_URL=/api
+# In Docker (prod) the app calls the API via nginx at the relative path
+# "/api/v1" — the same versioned base the backend mounts (see app.js) and the
+# http helper's fallback. nginx proxies /api/ through to the backend.
+ENV VITE_API_URL=/api/v1
 RUN npm run build
 
 # ---- serve: nginx serving the built assets (prod) ----
