@@ -1,0 +1,72 @@
+# ─────────────────────────────────────────────────────────────
+# PRODUCTION stack (single server, e.g. one AWS EC2 instance).
+#
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#
+# Differences vs the dev docker-compose.yml:
+#   • built images (backend target: prod, frontend target: serve/nginx) —
+#     NO source bind-mounts, NO nodemon/Vite dev server.
+#   • only the frontend is exposed publicly (port 80). The browser talks to
+#     nginx, which proxies /api/ to the backend over the private compose
+#     network — so mongo and the backend need NO published ports.
+#   • the ai-detector service is intentionally omitted.
+# ─────────────────────────────────────────────────────────────
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-stickyBoard}
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # No published ports: only the backend (same compose network) reaches it.
+
+  backend:
+    build:
+      context: ./backend
+      target: prod
+      args:
+        BACKEND_PORT: ${BACKEND_PORT:-8081}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: ${BACKEND_PORT:-8081}
+      MONGODB_URI: mongodb://mongo:27017/${MONGO_DB:-stickyBoard}
+      # Public origin of the site — used for CORS + email links.
+      CORS_ORIGIN: ${FRONTEND_ORIGIN}
+      APP_URL: ${FRONTEND_ORIGIN}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      MAIL_SECRET: ${MAIL_SECRET}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
+      LOG_API_TRAFFIC: ${LOG_API_TRAFFIC:-true}
+      LOG_RETENTION_DAYS: ${LOG_RETENTION_DAYS:-30}
+      RATE_LIMIT: ${RATE_LIMIT:-true}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    # No published port: nginx reaches it at backend:8081 on the compose network.
+
+  frontend:
+    build:
+      context: ./frontend
+      target: serve
+    restart: unless-stopped
+    environment:
+      # Substituted into nginx.conf so the /api proxy targets the backend port.
+      BACKEND_PORT: ${BACKEND_PORT:-8081}
+    depends_on:
+      - backend
+    ports:
+      # Public HTTP. Change the left side to 8080:80 if port 80 is taken.
+      - "80:80"
+
+volumes:
+  mongo-data:
